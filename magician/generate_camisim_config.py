@@ -108,7 +108,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
     # "nodes.dmp"
     # "merged.dmp"
     # "names.dmp"
-    ncbi_taxdump=tools/ncbi-taxonomy_20170222.tar.gz
+    ncbi_taxdump={camidir}/tools/ncbi-taxonomy_20170222.tar.gz
     
     # the strain simulator for de novo strain creation
     strain_simulation_template={camidir}/scripts/StrainSimulationWrapper/sgEvolver/simulation_dir/
@@ -154,7 +154,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         profile_path=error_profiles,
         amount=amount_genomes
     )
-    config_string = dedent(config_string)
+    config_string = dedent(config_string).lstrip()
     with open(file_name, "w") as outfile:
         outfile.write(config_string)
 
