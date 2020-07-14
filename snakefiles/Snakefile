@@ -7,7 +7,7 @@ IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
 CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
 #rule all_qc:
-#    input: expand("qc/{date}_sample_{sample_n}/{genome_id}1_fastqc.html", genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True)
+#    input: expand("qc/{genome_id}1_fastqc.html", genome_id=[genomeid.replace(".", "_") for genomeid in IDS])
 
 rule camisim_metafiles:
     params:
@@ -39,26 +39,34 @@ rule run_camisim:
     input:
         camisim_configfile = 'camisim_config_snaked.ini'
     output:
-        #read_1 = expand('camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz',
-        #                genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True),
-        #read_2 = expand('camisim_out/{date}_sample_{sample_n}/{genome_id}2.fq.gz',
-        #                genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True)
-        read_1 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz',
-        read_2 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}2.fq.gz'
+        concat_results = 'camisim_out/simulated_metagenome.gz'
     shell:
-        '''module load anaconda 2/4.4.0
-        python2 {CAMISIM_DIR}/metagenome_simulation.py {input.camisim_configfile}
+        '''module load anaconda2/4.4.0
+        python2 {CAMISIM_DIR}/metagenomesimulation.py {input.camisim_configfile}
+        cat camisim_out/*/reads/*.fq.gz > {output.concat_results}
         '''
+
 
 rule fastqc:
     input:
-          read_1 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz'
+          reads = 'camisim_out/simulated_metagenome.gz'
     output:
-          qc_data = 'qc/{date}_sample_{sample_n}/{genome_id}1_fastqc.html'
+          qc_data = 'qc/simulated_metagenome_fastqc.html'
     shell:
          '''module load tools ngs
          module load perl openjdk/14 fastqc/0.11.8
-         if [ ! -d "qc/{wildcards.date}_sample_{wildcards.sample_n}" ];\
-          then mkdir -p "qc/{wildcards.date}_sample_{wildcards.sample_n}"; fi
-         fastqc -o qc {input.read_1}
+         if [ ! -d "qc" ];\
+          then mkdir "qc"; fi
+         fastqc -o qc {input.reads}
          '''
+# TODO: there has to be a better way than this
+#rule move_qc:
+#    input:
+#         qc_dir =
+#    output:
+#          new_qc = directory('qc/current_qc')
+#    shell:
+#         '''if [ ! -d "{output.new_qc}" ];\
+#          then mkdir -p "{output.new_qc}"; fi
+#          cp -a {input.qc_dir}/. {output.new_qc}/
+#          '''
