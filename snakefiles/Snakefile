@@ -6,8 +6,8 @@
 IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
 CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
-#rule all_qc:
-#    input: expand("qc/{sample}/{sample}_R1.trim_fastqc.html", sample=IDS)
+rule all_qc:
+    input: expand("qc/{genome_id}1_fastqc.html", genome_id=[genomeid.replace(".", "_") for genomeid in IDS])
 
 rule camisim_metafiles:
     params:
@@ -39,9 +39,23 @@ rule run_camisim:
     input:
         camisim_configfile = 'camisim_config_snaked.ini'
     output:
-        read_1 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz',
-        read_2 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}2.fq.gz'
+        read_1 = expand('camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz',
+                        genome_id=[genomeid.replace(".", "_") for genomeid in IDS]),
+        read_2 = expand('camisim_out/{date}_sample_{sample_n}/{genome_id}2.fq.gz',
+                        genome_id=[genomeid.replace(".", "_") for genomeid in IDS])
     shell:
         '''module load anaconda 2/4.4.0
         python2 {CAMISIM_DIR}/metagenome_simulation.py {input.camisim_configfile}
         '''
+
+rule fastqc:
+    params:
+          read_1 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz'
+    output:
+          qc_data = 'qc/{genome_id}1_fastqc.html'
+    shell:
+         '''module load tools ngs
+         module load perl openjdk/14 fastqc/0.11.8
+         if [ ! -d "qc" ]; then mkdir "qc"; fi
+         fastqc -o qc {params.read_1}
+         '''
