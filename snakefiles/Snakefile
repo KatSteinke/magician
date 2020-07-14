@@ -3,14 +3,15 @@
 
 #import os
 
-IDS, = glob_wildcards("/home/projects/cge/data/projects/other/simulatedMAGpipeline/genomes/{genome_id}.gb") # get all genomes in genomes dir
+IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
+CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
 #rule all_qc:
 #    input: expand("qc/{sample}/{sample}_R1.trim_fastqc.html", sample=IDS)
 
 rule camisim_metafiles:
     params:
-        genome_files = " ".join(expand('/home/projects/cge/data/projects/other/simulatedMAGpipeline/genomes/{genome_ids}.gb', genome_ids=IDS))
+        genome_files = " ".join(expand('genomes/{genome_ids}.gb', genome_ids=IDS))
     output:
         fastas = expand('camisim_fasta/{genome_ids}.fa', genome_ids=IDS),
         camisim_metafile = 'camisim_configfiles/metadata',
@@ -25,7 +26,7 @@ rule camisim_configfiles:
         camisim_metafile = 'camisim_configfiles/metadata',
         camisim_genomefile = 'camisim_configfiles/id_to_genome_file'
     params:
-        camisim_dir = "/home/people/katste/camisim/CAMISIM"
+        camisim_dir = CAMISIM_DIR
     output:
         camisim_configfile = 'camisim_config_snaked.ini'
     shell:
@@ -34,7 +35,13 @@ rule camisim_configfiles:
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile}
          '''
 
-#rule run_camisim:
-#	input:
-#		 camisim_configfile = 'camisim_config_snaked.ini'
-#	output:
+rule run_camisim:
+    input:
+        camisim_configfile = 'camisim_config_snaked.ini'
+    output:
+        read_1 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz',
+        read_2 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}2.fq.gz'
+    shell:
+        '''module load anaconda 2/4.4.0
+        python2 {CAMISIM_DIR}/metagenome_simulation.py {input.camisim_configfile}
+        '''
