@@ -39,10 +39,12 @@ rule run_camisim:
     input:
         camisim_configfile = 'camisim_config_snaked.ini'
     output:
-        read_1 = expand('camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz',
-                        genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True),
-        read_2 = expand('camisim_out/{date}_sample_{sample_n}/{genome_id}2.fq.gz',
-                        genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True)
+        #read_1 = expand('camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz',
+        #                genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True),
+        #read_2 = expand('camisim_out/{date}_sample_{sample_n}/{genome_id}2.fq.gz',
+        #                genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True)
+        read_1 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}1.fq.gz',
+        read_2 = 'camisim_out/{date}_sample_{sample_n}/{genome_id}2.fq.gz'
     shell:
         '''module load anaconda 2/4.4.0
         python2 {CAMISIM_DIR}/metagenome_simulation.py {input.camisim_configfile}
