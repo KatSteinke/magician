@@ -3,21 +3,21 @@
 
 #import os
 
-IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
+IDS, = glob_wildcards("/home/projects/cge/data/projects/other/simulatedMAGpipeline/genomes/{genome_id}.gb") # get all genomes in genomes dir
 
 #rule all_qc:
 #    input: expand("qc/{sample}/{sample}_R1.trim_fastqc.html", sample=IDS)
 
 rule camisim_metafiles:
-    input:
-        genome_files = " ".join(expand('genomes/{genome_ids}.gb', genome_ids=IDS))
+    params:
+        genome_files = " ".join(expand('/home/projects/cge/data/projects/other/simulatedMAGpipeline/genomes/{genome_ids}.gb', genome_ids=IDS))
     output:
         fastas = expand('camisim_fasta/{genome_ids}.fa', genome_ids=IDS),
         camisim_metafile = 'camisim_configfiles/metadata',
         camisim_genomefile = 'camisim_configfiles/id_to_genome_file'
     shell:
         '''module load anaconda3/4.4.0
-        python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/extract_camisim_data.py {input.genome_files}
+        python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/extract_camisim_data.py {params.genome_files}
         '''
 
 rule camisim_configfiles:
