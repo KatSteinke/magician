@@ -34,7 +34,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         error_profiles: Path to error profiles, can be blank if using wgsim
         amount_genomes: amount of genomes in the sample
     """
-    config_string = '''
+    config_string = '''\
     [Main]
     # maximum number of processes
     max_processors=8
@@ -154,7 +154,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         profile_path=error_profiles,
         amount=amount_genomes
     )
-    config_string = dedent(config_string).lstrip()
+    config_string = dedent(config_string)
     with open(file_name, "w") as outfile:
         outfile.write(config_string)
 
