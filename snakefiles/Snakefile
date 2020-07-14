@@ -6,9 +6,8 @@
 IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
 CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
-rule all_qc:
-    input: expand("qc/{date}_sample_{sample_n}/{genome_id}1_fastqc.html",
-                  genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True)
+#rule all_qc:
+#    input: expand("qc/{date}_sample_{sample_n}/{genome_id}1_fastqc.html", genome_id=[genomeid.replace(".", "_") for genomeid in IDS], allow_missing=True)
 
 rule camisim_metafiles:
     params:
