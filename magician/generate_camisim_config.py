@@ -19,7 +19,8 @@ def get_file_length(infile: Path) -> int:
             pass
     return count
 
-def get_sizes_from_idfile(file_record: Path) -> float:
+
+def get_sizes_from_idfile(file_record: Path) -> float: # TODO: adapt to different average coverage levels!
     """Parse a id_to_genome file and sum up sizes of all fasta files given
     Arguments:
         file_record: Path to id_to_genome file
@@ -33,6 +34,7 @@ def get_sizes_from_idfile(file_record: Path) -> float:
     total_size = sum([len(record) for fasta_file in fasta_paths
                       for record in SeqIO.parse(fasta_file, "fasta")])
     return round(total_size/1000000000, 2)
+
 
 def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file_name: str, output_dir: str,
                          readsim: str, readsim_path: Path, sample: str, error_profiles: Optional[Path],
