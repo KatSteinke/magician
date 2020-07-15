@@ -6,8 +6,6 @@
 IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
 CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
-
-
 rule camisim_metafiles:
     params:
         genome_files = " ".join(expand('genomes/{genome_ids}.gb', genome_ids=IDS))
@@ -38,17 +36,19 @@ rule run_camisim:
     input:
         camisim_configfile = 'camisim_config_snaked.ini'
     output:
-        concat_results = 'camisim_out/simulated_metagenome.gz'
+        concat_results_r1 = 'camisim_out/simulated_metagenome_r1.gz',
+        concat_results_r2 = 'camisim_out/simulated_metagenome_r2.gz'
     shell:
         '''module load anaconda2/4.4.0
         python2 {CAMISIM_DIR}/metagenomesimulation.py {input.camisim_configfile}
-        cat camisim_out/*/reads/*.fq.gz > {output.concat_results}
+        cat camisim_out/*/reads/*1.fq.gz > {output.concat_results_r1}
+        cat camisim_out/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
 
 
 rule fastqc:
     input:
-          reads = 'camisim_out/simulated_metagenome.gz'
+          reads = 'camisim_out/simulated_metagenome_r1.gz'
     output:
           qc_data = 'qc/simulated_metagenome_fastqc.html'
     shell:
