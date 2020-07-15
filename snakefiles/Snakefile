@@ -12,24 +12,29 @@ rule camisim_metafiles:
     output:
         fastas = expand('camisim_fasta/{genome_ids}.fa', genome_ids=IDS),
         camisim_metafile = 'camisim_configfiles/metadata',
-        camisim_genomefile = 'camisim_configfiles/id_to_genome_file'
+        camisim_genomefile = 'camisim_configfiles/id_to_genome_file',
+        camisim_abundance = 'camisim_configfiles/id_to_distributions'
     shell:
         '''module load anaconda3/4.4.0
-        python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/extract_camisim_data.py {params.genome_files}
+        python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/extract_camisim_data.py \
+         {params.genome_files} --even_abundance
         '''
 
 rule camisim_configfiles:
     input:
         camisim_metafile = 'camisim_configfiles/metadata',
-        camisim_genomefile = 'camisim_configfiles/id_to_genome_file'
+        camisim_genomefile = 'camisim_configfiles/id_to_genome_file',
+        camisim_abundance = 'camisim_configfiles/id_to_distributions'
     params:
-        camisim_dir = CAMISIM_DIR
+        camisim_dir = CAMISIM_DIR,
+        coverage = 20
     output:
         camisim_configfile = 'camisim_config_snaked.ini'
     shell:
          '''module load anaconda3/4.4.0
          python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/generate_camisim_config.py \
-         {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile}
+         {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
+         -a {input.camisim_abundance} -c 20
          '''
 
 rule run_camisim:
