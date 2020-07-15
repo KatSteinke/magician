@@ -20,12 +20,15 @@ def get_file_length(infile: Path) -> int:
     return count
 
 
-def get_sizes_from_idfile(file_record: Path) -> float: # TODO: adapt to different average coverage levels!
-    """Parse a id_to_genome file and sum up sizes of all fasta files given
+def get_sample_size(file_record: Path, coverage: Optional[float]=1) -> float:
+    """Parse a id_to_genome file, sum up sizes of all fasta files given and,
+    if desired, multiply with an average coverage factor.
     Arguments:
-        file_record: Path to id_to_genome file
+        file_record:    Path to id_to_genome file
+        coverage:       desired average coverage for the sample
     Returns:
-        The size of all fasta files listed in the id_to_genome file in bp.
+        The sample size for obtaining a given average coverage level, given
+        the total size of all genomes examined.
     """
     # get all paths
     with open(file_record, "r") as idfile:
@@ -33,12 +36,13 @@ def get_sizes_from_idfile(file_record: Path) -> float: # TODO: adapt to differen
     # for each file, get genome size and add up
     total_size = sum([len(record) for fasta_file in fasta_paths
                       for record in SeqIO.parse(fasta_file, "fasta")])
-    return round(total_size/1000000000, 2)
+    return round(coverage*(total_size/1000000000), 2)
 
 
 def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file_name: str, output_dir: str,
-                         readsim: str, readsim_path: Path, sample: str, error_profiles: Optional[Path],
-                         amount_genomes: int, sample_size: float):
+                         readsim: str, readsim_path: Path, sample: str,
+                         amount_genomes: int, sample_size: float, error_profiles: Optional[Path] = "",
+                         abundance_file: Optional[Path]=""):
     """Generate a config file for CAMISIM and write it to a specified filename.
     Arguments:
         camisim_dir:    Path to the directory containing CAMISIM
@@ -52,6 +56,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         error_profiles: Path to error profiles, can be blank if using wgsim
         amount_genomes: amount of genomes in the sample
         sample_size:    sample size in Gbp
+        abundance_file: Path to file listing abundance for genomes, if given
     """
     config_string = '''\
     [Main]
@@ -114,6 +119,8 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
     
     # Only relevant if not from_profile is run:
     [CommunityDesign]
+    # optional: give abundance of genomes
+    distribution_file_paths={dist_file}
     # specify the samples size in Giga base pairs
     size={samplesize}
     
@@ -172,7 +179,8 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         sampletype=sample,
         profile_path=error_profiles,
         amount=amount_genomes,
-        samplesize=sample_size
+        samplesize=sample_size,
+        dist_file=abundance_file
     )
     config_string = dedent(config_string)
     with open(file_name, "w") as outfile:
@@ -188,6 +196,11 @@ if __name__ == "__main__":
                         default="camisim_config.ini")
     parser.add_argument('-o', '--out_dir', action="store", help="Output directory for CAMISIM (default: camisim_out)",
                         default="camisim_out")
+    parser.add_argument('-a', '--abundance_file', action="store",
+                        help="Optional: file giving relative abundance of genomes", default="")
+    parser.add_argument('-c', '--coverage', action="store",
+                        help="Desired average coverage for the sample (default: 1X)",
+                        default=1)
     parser.add_argument('--read_sim', action="store", help="Read simulator to use",
                         choices=["art", "wgsim", "nanosim", "pbsim"],
                         default="art")  # TODO: improve documentation - what to use when?
@@ -223,7 +236,10 @@ if __name__ == "__main__":
     # establish remaining paths
     metadata = Path(args.metadata).resolve()
     genome_file = Path(args.genome_file).resolve()
-
+    if args.abundance_file:
+        abundance_file = Path(args.abundance_file).resolve()
+    else:
+        abundance_file = args.abundance_file
     # if no read_sim_path, it's the absolute path to CAMISIM's ART
     if not args.read_sim_path:
         read_sim_path = camisim_dir / "tools" / "art_illumina-2.3.6" / "art_illumina"
@@ -235,9 +251,10 @@ if __name__ == "__main__":
     out_dir = args.out_dir
     read_sim = args.read_sim
     sample_type = args.sample_type
+    coverage = float(args.coverage)
 
     #calculate amount of genomes and sample size
     genomes = get_file_length(genome_file)
-    size_total = get_sizes_from_idfile(genome_file)
+    size_total = get_sample_size(genome_file, coverage)
     generate_config_file(camisim_dir, metadata, genome_file, filename, out_dir, read_sim, read_sim_path, sample_type,
-                         error_profile, genomes, size_total)
+                        genomes, size_total, error_profile, abundance_file)
