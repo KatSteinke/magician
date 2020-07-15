@@ -49,7 +49,9 @@ rule run_camisim:
         cat camisim_out/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
-
+#rule cleanup_camisim: TODO! Move old result files, clear out old internal data
+#    input:
+#        camisim_resultdir = ''
 
 rule fastqc:
     input:
@@ -75,145 +77,145 @@ rule trim_bbduk:
     shell:
         '''bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t minlen=50 qtrim=r trimq=20 k=19 mink=11 overwrite=t threads={threads} rref=adapters.fa
         '''
-#
-#
-# # Do metagenomic assembly using metaSpades
-# rule asm_metaspades:
-#         input:
-#             R1="trimReads/simulated_metagenome_r1.trim.fq.gz",
-#             R2="trimReads/simulated_metagenome_r2.trim.fq.gz",
-#             RS="trimReads/simulated_metagenome_S.trim.fq.gz"
-#         output:
-#             fa="metaspades/simulated_scaffolds.fasta"
-#         params:
-#             dir="metaspades",
-#             asm="metaspades/scaffolds.fasta",
-#             time="time/metaspades/simulated.time"
-#         log:
-#             out="logs/asm_metaspades/simulated.out",
-#             err="logs/asm_metaspades/simulated.err"
-#         benchmark:
-#             "benchmarks/simulated.metaspades.bm.txt"
-#         threads: 20
-#         shell:
-#                 '''
-#                 module load spades/3.13.0
-#                 /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} -o {params.dir} -k 27,47,67,87,107,127 --memory 700 2> {log.err} 1> {log.out}
-#             mv {params.asm} {output.fa}
-#                 '''
-#
-# # Clean up after metaspades
-# # Remove leftover files and compress final output
-# # Should only run when final metaspades output and some junk is present
-# rule cleanup_metaspades:
-#     input:
-#         dir="metaspades/{id}",
-#         scaf="metaspades/{id}/{id}.scaf.min1000.fa",
-#         junk="metaspades/{id}/contigs.fasta"
-#     output:
-#         cleanup="metaspades/{id}/cleanup.txt"
-#     threads: 8
-#     shell:
-#                 '''
-#         rm -f {input.dir}/contigs.paths
-#         rm -f {input.dir}/scaffolds.paths
-#         rm -f {input.dir}/first_pe_contigs.fasta
-#         rm -f {input.dir}/before_rr.fasta
-#         rm -rf {input.dir}/K27 {input.dir}/K47 {input.dir}/K67 {input.dir}/K87 {input.dir}/K107 {input.dir}/K127 {input.dir}/corrected
-#         rm -f {input.junk}
-#         cd {input.dir} && pigz -q -p {threads} *.fasta *.fastg *.gfa && cd ../..
-#         touch {output.cleanup}
-#                 '''
-#
-# # Remove small scaffolds and add sample prefix to fasta header
-# rule filter_scafs:
-#     input:
-#         asm="metaspades/{id}/{id}_scaffolds.fasta"
-#     output:
-#         asm="metaspades/{id}/{id}.scaf.min1000.fa"
-#     params:
-#         pfx="{id}"
-#     threads: 1
-#     shell:
-#         '''
-#         rename.sh ow=t fastawrap=60 minscaf=1000 prefix={params.pfx} addprefix=t in={input.asm} out={output.asm}
-#         '''
-#
-# # Map reads to assembly to get coverage and depth
-# rule map_bbmap:
-#     input:
-#         R1="trimReads/{id}_R1.trim.fq.gz",
-#         R2="trimReads/{id}_R2.trim.fq.gz",
-#         fa="metaspades/{id}/{id}.scaf.min1000.fa"
-#     output:
-#         outsam="mapped/{id}.sam",
-#         outbam="mapped/{id}.sort.bam",
-#         dep="coverage/{id}.txt"
-#     log:
-#         out="logs/map_bbmap/{id}.out",
-#         err="logs/map_bbmap/{id}.err"
-#
-#     threads: 20
-#     shell:
-#             '''
-#             mkdir -p logs/map_bbmap
-#             bbmap.sh in={input.R1} in2={input.R2} minid=0.90 threads={threads} ref={input.fa} outm={output.outsam} overwrite=t nodisk=t 2> {log.err} 1> {log.out}
-#             samtools view -bSh1 {output.outsam} | samtools sort -m 20G -@ 3 > {output.outbam}
-#             jgi_summarize_bam_contig_depths {output.outbam} --outputDepth {output.dep}
-#             '''
-#
-# # Use MetaBat2 to bin scaffolds from sample
-# rule metabat2:
-#     input:
-#         asm="metaspades/{id}/{id}.scaf.min1000.fa",
-#         dep="coverage/{id}.txt"
-#     output:
-#         "metabat2/{id}/{id}.bin"
-#     params:
-#         out="metabat2/{id}/{id}.bin",
-#         time="time/metabat2/{id}.time"
-#     log:
-#                 out="logs/metabat2/{id}.out",
-#                 err="logs/metabat2/{id}.err"
-#     benchmark:
-#                 "benchmarks/{id}.metabat2.bm.txt"
-#
-#     threads: 10
-#     shell:
-#         '''
-#         mkdir -p logs/metabat2
-#         mkdir -p time/metabat2
-#         /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} -o {params.out} 2> {log.err} 1> {log.out}
-#         '''
-#
-# # Use prodigal to find ORFs in the metagenome and save genes and proteins
-# rule findgenes_prodigal:
-#     input:
-#         asm="metaspades/{id}/{id}.scaf.min1000.fa"
-#     output:
-#         fna="genes/{id}/{id}_genes.fna",
-#         faa="genes/{id}/{id}_proteins.faa",
-#         prodi="genes/{id}/{id}_prodigal.txt"
-#     threads: 2
-#     shell:
-#         '''
-#         prodigal -i {input.asm} -p meta -a {output.faa} -d {output.fna} -o {output.prodi}
-#         '''
-#
-# # Run checkm on the MAGs to estimate taxonomy and quality
-# rule checkm:
-#         input:
-#                 dir="metabat2/{id}"
-#         output:
-#                 txt="checkm/{id}.checkm.txt",
-#                 dir="checkm/{id}.checkm"
-#         threads: 20
-#         shell:
-#                 '''
-#         module unload anaconda3/2.2.0
-#                 module load anaconda2/4.4.0
-#                 module load prodigal/2.6.2
-#         module load hmmer/3.1b2
-#         module load pplacer/1.1.alpha17
-#         checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {input.dir} {output.dir}
-#         '''
+
+
+# Do metagenomic assembly using metaSpades
+rule asm_metaspades:
+        input:
+            R1="trimReads/simulated_metagenome_r1.trim.fq.gz",
+            R2="trimReads/simulated_metagenome_r2.trim.fq.gz",
+            RS="trimReads/simulated_metagenome_S.trim.fq.gz"
+        output:
+            fa="metaspades/simulated_scaffolds.fasta"
+        params:
+            dir="metaspades",
+            asm="metaspades/scaffolds.fasta",
+            time="time/metaspades/simulated.time"
+        log:
+            out="logs/asm_metaspades/simulated.out",
+            err="logs/asm_metaspades/simulated.err"
+        benchmark:
+            "benchmarks/simulated.metaspades.bm.txt"
+        threads: 20
+        shell:
+                '''
+                module load spades/3.13.0
+                /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} -o {params.dir} -k 27,47,67,87,107,127 --memory 700 2> {log.err} 1> {log.out}
+            mv {params.asm} {output.fa}
+                '''
+
+# Clean up after metaspades
+# Remove leftover files and compress final output
+# Should only run when final metaspades output and some junk is present
+rule cleanup_metaspades:
+    input:
+        dir="metaspades",
+        scaf="metaspades/simulated_metagenome.scaf.min1000.fa",
+        junk="metaspades/contigs.fasta"
+    output:
+        cleanup="metaspades/cleanup.txt"
+    threads: 8
+    shell:
+                '''
+        rm -f {input.dir}/contigs.paths
+        rm -f {input.dir}/scaffolds.paths
+        rm -f {input.dir}/first_pe_contigs.fasta
+        rm -f {input.dir}/before_rr.fasta
+        rm -rf {input.dir}/K27 {input.dir}/K47 {input.dir}/K67 {input.dir}/K87 {input.dir}/K107 {input.dir}/K127 {input.dir}/corrected
+        rm -f {input.junk}
+        cd {input.dir} && pigz -q -p {threads} *.fasta *.fastg *.gfa && cd ../..
+        touch {output.cleanup}
+                '''
+
+# Remove small scaffolds and add sample prefix to fasta header
+rule filter_scafs:
+    input:
+        asm="metaspades/simulated_scaffolds.fasta"
+    output:
+        asm="metaspades/simulated_metagenome.scaf.min1000.fa"
+    params:
+        pfx="sim" # TODO - include *some* run identifier?
+    threads: 1
+    shell:
+        '''
+        rename.sh ow=t fastawrap=60 minscaf=1000 prefix={params.pfx} addprefix=t in={input.asm} out={output.asm}
+        '''
+
+# Map reads to assembly to get coverage and depth
+rule map_bbmap:
+    input:
+        R1="trimReads/simulated_metagenome_r1.trim.fq.gz",
+        R2="trimReads/simulated_metagenome_r2.trim.fq.gz",
+        fa="metaspades/simulated_metagenome.scaf.min1000.fa"
+    output:
+        outsam="mapped/simulated.sam",
+        outbam="mapped/simulated.sort.bam",
+        dep="coverage/simulated.txt"
+    log:
+        out="logs/map_bbmap/simulated.out",
+        err="logs/map_bbmap/simulated.err"
+
+    threads: 20
+    shell:
+            '''
+            mkdir -p logs/map_bbmap
+            bbmap.sh in={input.R1} in2={input.R2} minid=0.90 threads={threads} ref={input.fa} outm={output.outsam} overwrite=t nodisk=t 2> {log.err} 1> {log.out}
+            samtools view -bSh1 {output.outsam} | samtools sort -m 20G -@ 3 > {output.outbam}
+            jgi_summarize_bam_contig_depths {output.outbam} --outputDepth {output.dep}
+            '''
+
+# Use MetaBat2 to bin scaffolds from sample
+rule metabat2:
+    input:
+        asm="metaspades/simulated_metagenome.scaf.min1000.fa",
+        dep="coverage/simulated.txt"
+    output:
+        "metabat2/simulated.bin"
+    params:
+        out="metabat2/simulated.bin", # TODO: is this needed?
+        time="time/metabat2/simulated.time"
+    log:
+                out="logs/metabat2/simulated.out",
+                err="logs/metabat2/simulated.err"
+    benchmark:
+                "benchmarks/simulated.metabat2.bm.txt"
+
+    threads: 10
+    shell: # TODO - does snakemake generate dirs for logs and such?
+        '''
+        mkdir -p logs/metabat2
+        mkdir -p time/metabat2
+        /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} -o {params.out} 2> {log.err} 1> {log.out}
+        '''
+
+# Use prodigal to find ORFs in the metagenome and save genes and proteins
+rule findgenes_prodigal:
+    input:
+        asm="metaspades/simulated_metagenome.scaf.min1000.fa"
+    output:
+        fna="genes/simulated_genes.fna",
+        faa="genes/simulated_proteins.faa",
+        prodi="genes/simulated_prodigal.txt"
+    threads: 2
+    shell:
+        '''
+        prodigal -i {input.asm} -p meta -a {output.faa} -d {output.fna} -o {output.prodi}
+        '''
+
+# Run checkm on the MAGs to estimate taxonomy and quality
+rule checkm:
+        input:
+                dir="metabat2"
+        output:
+                txt="checkm/simulated.checkm.txt",
+                dir="checkm/simulated.checkm"
+        threads: 20
+        shell:
+                '''
+        module unload anaconda3/2.2.0
+                module load anaconda2/4.4.0
+                module load prodigal/2.6.2
+        module load hmmer/3.1b2
+        module load pplacer/1.1.alpha17
+        checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {input.dir} {output.dir}
+        '''
