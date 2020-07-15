@@ -3,6 +3,8 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Optional
 
+from Bio import SeqIO
+
 # utility function for getting amount of genomes
 def get_file_length(infile: Path) -> int:
     """Count the number of lines in a file.
@@ -17,10 +19,24 @@ def get_file_length(infile: Path) -> int:
             pass
     return count
 
+def get_sizes_from_idfile(file_record: Path) -> float:
+    """Parse a id_to_genome file and sum up sizes of all fasta files given
+    Arguments:
+        file_record: Path to id_to_genome file
+    Returns:
+        The size of all fasta files listed in the id_to_genome file in bp.
+    """
+    # get all paths
+    with open(file_record, "r") as idfile:
+        fasta_paths = [Path(line.strip().split("\t")[1]) for line in idfile]
+    # for each file, get genome size and add up
+    total_size = sum([len(record) for fasta_file in fasta_paths
+                      for record in SeqIO.parse(fasta_file, "fasta")])
+    return round(total_size/1000000000, 2)
 
 def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file_name: str, output_dir: str,
                          readsim: str, readsim_path: Path, sample: str, error_profiles: Optional[Path],
-                         amount_genomes: int):
+                         amount_genomes: int, sample_size: float):
     """Generate a config file for CAMISIM and write it to a specified filename.
     Arguments:
         camisim_dir:    Path to the directory containing CAMISIM
@@ -33,6 +49,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         sample:         type of sample to use
         error_profiles: Path to error profiles, can be blank if using wgsim
         amount_genomes: amount of genomes in the sample
+        sample_size:    sample size in Gbp
     """
     config_string = '''\
     [Main]
@@ -96,7 +113,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
     # Only relevant if not from_profile is run:
     [CommunityDesign]
     # specify the samples size in Giga base pairs
-    size=5
+    size={samplesize}
     
     # how many different samples?
     number_of_samples=1
@@ -152,7 +169,8 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         simpath=readsim_path,
         sampletype=sample,
         profile_path=error_profiles,
-        amount=amount_genomes
+        amount=amount_genomes,
+        samplesize=sample_size
     )
     config_string = dedent(config_string)
     with open(file_name, "w") as outfile:
@@ -216,6 +234,8 @@ if __name__ == "__main__":
     read_sim = args.read_sim
     sample_type = args.sample_type
 
+    #calculate amount of genomes and sample size
     genomes = get_file_length(genome_file)
+    size_total = get_sizes_from_idfile(genome_file)
     generate_config_file(camisim_dir, metadata, genome_file, filename, out_dir, read_sim, read_sim_path, sample_type,
-                         error_profile, genomes)
+                         error_profile, genomes, size_total)
