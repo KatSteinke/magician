@@ -34,7 +34,8 @@ rule camisim_configfiles:
          '''module load anaconda3/4.4.0
          python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/generate_camisim_config.py \
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
-         -a {input.camisim_abundance} -c 20
+         -a {input.camisim_abundance} -c 20 --read-sim "wgsim" --read_sim_path "{params.camisim_dir}/tools/wgsim/wgsim" \
+         --errorfree
          '''
 
 rule run_camisim:
