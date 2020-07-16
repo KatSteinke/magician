@@ -68,14 +68,17 @@ rule fastqc:
 rule trim_bbduk:
     input:
         R1="camisim_out/simulated_metagenome_r1.gz",
-        R2="camisim_out/simulated_metagenome_r1.gz"
+        R2="camisim_out/simulated_metagenome_r2.gz"
     output:
         R1="trimReads/simulated_metagenome_r1.trim.fq.gz",
         R2="trimReads/simulated_metagenome_r2.trim.fq.gz",
         RS="trimReads/simulated_metagenome_S.trim.fq.gz"
     threads: 8
     shell:
-        '''bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t minlen=50 qtrim=r trimq=20 k=19 mink=11 overwrite=t threads={threads} rref=adapters.fa
+        '''module load ngs tools
+        module load java/1.8.0
+        module load bbmap/36.49
+        bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa
         '''
 
 
@@ -100,6 +103,7 @@ rule asm_metaspades:
         shell:
                 '''
                 module load spades/3.13.0
+                mkdir -p "time/metaspades"
                 /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} -o {params.dir} -k 27,47,67,87,107,127 --memory 700 2> {log.err} 1> {log.out}
             mv {params.asm} {output.fa}
                 '''
@@ -157,7 +161,12 @@ rule map_bbmap:
 
     threads: 20
     shell:
-            '''
+            '''module load ngs tools
+            module load perl
+            module load java/1.8.0
+            module load bbmap/36.49
+            module load samtools/1.10
+            module load metabat/2.12.1
             mkdir -p logs/map_bbmap
             bbmap.sh in={input.R1} in2={input.R2} minid=0.90 threads={threads} ref={input.fa} outm={output.outsam} overwrite=t nodisk=t 2> {log.err} 1> {log.out}
             samtools view -bSh1 {output.outsam} | samtools sort -m 20G -@ 3 > {output.outbam}
@@ -183,6 +192,9 @@ rule metabat2:
     threads: 10
     shell: # TODO - does snakemake generate dirs for logs and such?
         '''
+        module load ngs tools
+        module load perl
+        module load metabat/2.12.1
         mkdir -p logs/metabat2
         mkdir -p time/metabat2
         /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} -o {params.out} 2> {log.err} 1> {log.out}
