@@ -15,8 +15,8 @@ def create_camisim_files(genbanks: List[str], make_abundance: Optional[bool]=Fal
         Returns:
             A tab-separated metadata file containing genome ID, OTU, NCBI taxid and novelty category,
             a fasta file with the sequence,
-            a tab-separated file listing genome ID and abundance, and
-            a tab-separated file listing the genome ID and path of the fasta file
+            a tab-separated file listing the genome ID and path of the fasta file, and
+            optionally, a tab-separated file listing genome ID and abundance
             for each genbank.
     """
     genbanks = [Path(genbank) for genbank in genbanks]
@@ -69,6 +69,21 @@ def create_camisim_files(genbanks: List[str], make_abundance: Optional[bool]=Fal
     if make_abundance:
         with open(Path("camisim_configfiles", "id_to_distributions"), "w") as abundance_file:
             abundance_file.write("\n".join(id_to_abundance))
+
+def get_camisim_per_sample(samples_file: Path, sample_col: str):
+    """From a tab-separated table giving genbank files and their abundance in a given sample,
+    create CAMISIM metadata, genome and abundance files.
+    Arguments:
+        samples_file:   Path to .tsv file
+        sample_col:     column name for sample
+    Returns:
+        A tab-separated metadata file containing genome ID, OTU, NCBI taxid and novelty category,
+        a fasta file with the sequence,
+        a tab-separated file listing genome ID and abundance, and
+        a tab-separated file listing the genome ID and path of the fasta file
+        for each genbank listed in the table.
+    """
+    pass
 
 if __name__ == "__main__":
     # input: list of files
