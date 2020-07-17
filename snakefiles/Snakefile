@@ -10,6 +10,20 @@ with open("sample_distributions.tsv", "r") as samples_file:
 
 CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
+rule all_camisim:
+    input:
+        all_r1 = expand('camisim_out/{sample}/simulated_{sample}_r1.gz', sample=SAMPLES),
+        all_r2 = expand('camisim_out/{sample}/simulated_{sample}_r2.gz', sample=SAMPLES)
+
+rule all_qc:
+        input: expand("qc/{sample}/simulated_{sample}_r1.trim_fastqc.html", sample=SAMPLES)
+
+rule all_metaspades:
+	input: expand("metaspades/{sample}/{sample}_scaffolds.fasta", sample=SAMPLES)
+
+rule make_mags:
+	input: expand("metabat2/{sample}/{sample}.bin", sample=SAMPLES)
+
 # TODO: universal target rules
 
 # rule camisim_metafiles:
