@@ -4,6 +4,8 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Optional, List
 
+import pandas as pd
+
 from Bio import SeqIO
 
 
@@ -83,7 +85,11 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
         a tab-separated file listing the genome ID and path of the fasta file
         for each genbank listed in the table.
     """
-    pass
+    samples_table = pd.read_csv(samples_file, sep="\t", index_col=False)
+    create_camisim_files(samples_table['genomes'].tolist())
+    with open(Path("camisim_configfiles", "id_to_distributions"), "w") as abundance_file:
+        abundance_file.write(samples_table.to_csv(sep="\t", header=False, columns=['genomes', sample_col]))
+
 
 if __name__ == "__main__":
     # input: list of files
