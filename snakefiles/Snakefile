@@ -24,7 +24,6 @@ rule all_metaspades:
 rule make_mags:
 	input: expand("metabat2/{sample}/{sample}.bin", sample=SAMPLES)
 
-# TODO: universal target rules
 
 # rule camisim_metafiles:
 #     params:
@@ -42,7 +41,7 @@ rule make_mags:
 
 rule camisim_metafiles:
     input:
-        samplefile = "samples_distribution.tsv"
+        samplefile = "sample_distributions.tsv"
     params:
         sample_col = "{sample}"
     output:
