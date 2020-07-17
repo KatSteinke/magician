@@ -101,11 +101,11 @@ rule asm_metaspades:
         benchmark:
             "benchmarks/simulated.metaspades.bm.txt"
         threads: 20
-        shell:
+        shell: # specify phred offset - assumed to be 33 for wgsim reads w/o error profile
                 '''
                 module load spades/3.13.0
                 mkdir -p "time/metaspades"
-                /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} -o {params.dir} -k 27,47,67,87,107,127 --memory 700 2> {log.err} 1> {log.out}
+                /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} -o {params.dir} -k 27,47,67,87,107,127 --memory 700 --phred-offset 33 2> {log.err} 1> {log.out}
             mv {params.asm} {output.fa}
                 '''
 
