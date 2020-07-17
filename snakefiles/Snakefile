@@ -216,7 +216,7 @@ rule map_bbmap:
 # Use MetaBat2 to bin scaffolds from sample
 rule metabat2:
     input:
-        asm="metaspades/simulated_{sample}.scaf.min1000.fa",
+        asm="metaspades/{sample}/simulated_{sample}.scaf.min1000.fa",
         dep="coverage/{sample}.txt"
     output:
         "metabat2/{sample}/{sample}.bin"
