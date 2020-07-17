@@ -176,7 +176,7 @@ rule filter_scafs:
     output:
         asm="metaspades/{sample}/simulated_{sample}.scaf.min1000.fa"
     params:
-        pfx="{sample}" # TODO - include *some* run identifier?
+        pfx="{sample}" 
     threads: 1
     shell:
         '''module load ngs tools

@@ -123,11 +123,11 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
     genome_ids, metadata, id_to_genome, id_to_abundance = get_metadata_from_records(samples_table['genomes'])
     # write metadata/id to fasta files
     write_camisim_files(metadata, id_to_genome, id_to_abundance, "metadata_{}".format(sample_col),
-                        "id_to_genome_file{}".format(sample_col))
+                        "id_to_genome_file_{}".format(sample_col))
     # extract genome IDs
     samples_table['genome_id'] = genome_ids
     with open(Path("camisim_configfiles", "id_to_distributions_{}".format(sample_col)), "w") as abundance_file:
-        abundance_file.write(samples_table.to_csv(sep="\t", header=False, columns=['genome_id', sample_col]))
+        abundance_file.write(samples_table.to_csv(sep="\t", header=False, index=False, columns=['genome_id', sample_col]))
 
 
 
