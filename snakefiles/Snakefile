@@ -142,7 +142,9 @@ rule filter_scafs:
         pfx="sim" # TODO - include *some* run identifier?
     threads: 1
     shell:
-        '''
+        '''module load ngs tools
+        module load jdk/14
+        module load bbmap/36.49
         rename.sh ow=t fastawrap=60 minscaf=1000 prefix={params.pfx} addprefix=t in={input.asm} out={output.asm}
         '''
 
