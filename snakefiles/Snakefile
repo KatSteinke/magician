@@ -3,52 +3,74 @@
 
 #import os
 
-IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
+#IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
+# required: tab-separated file with genbank path to abundance in sample mapping
+with open("sample_distributions.tsv", "r") as samples_file:
+    SAMPLES = samples_file.readline().strip().split("\t")[1:] # from the header, take all but the first column's names
+
 CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
+# TODO: universal target rules
+
+# rule camisim_metafiles:
+#     params:
+#         genome_files = " ".join(expand('genomes/{genome_ids}.gb', genome_ids=IDS))
+#     output:
+#         fastas = expand('camisim_fasta/{genome_ids}.fa', genome_ids=IDS),
+#         camisim_metafile = 'camisim_configfiles/metadata',
+#         camisim_genomefile = 'camisim_configfiles/id_to_genome_file',
+#         camisim_abundance = 'camisim_configfiles/id_to_distributions'
+#     shell:
+#         '''module load anaconda3/4.4.0
+#         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/extract_camisim_data.py \
+#          {params.genome_files} --even_abundance
+#         '''
+
 rule camisim_metafiles:
+    input:
+        samplefile = "samples_distribution.tsv"
     params:
-        genome_files = " ".join(expand('genomes/{genome_ids}.gb', genome_ids=IDS))
+        sample_col = "{sample}"
     output:
-        fastas = expand('camisim_fasta/{genome_ids}.fa', genome_ids=IDS),
-        camisim_metafile = 'camisim_configfiles/metadata',
-        camisim_genomefile = 'camisim_configfiles/id_to_genome_file',
-        camisim_abundance = 'camisim_configfiles/id_to_distributions'
+        camisim_metafile = 'camisim_configfiles/metadata_{sample}',
+        camisim_genomefile = 'camisim_configfiles/id_to_genome_file_{sample}',
+        camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}'
     shell:
-        '''module load anaconda3/4.4.0
+        '''module load tools
+        module load anaconda3/4.4.0
         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/extract_camisim_data.py \
-         {params.genome_files} --even_abundance
+        {input.samplefile} {params.sample_col}
         '''
 
 rule camisim_configfiles:
     input:
-        camisim_metafile = 'camisim_configfiles/metadata',
-        camisim_genomefile = 'camisim_configfiles/id_to_genome_file',
-        camisim_abundance = 'camisim_configfiles/id_to_distributions'
+        camisim_metafile = 'camisim_configfiles/metadata_{sample}',
+        camisim_genomefile = 'camisim_configfiles/id_to_genome_file_{sample}',
+        camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}'
     params:
         camisim_dir = CAMISIM_DIR,
         coverage = 20
     output:
-        camisim_configfile = 'camisim_config_snaked.ini'
+        camisim_configfile = 'camisim_config_{sample}.ini'
     shell:
          '''module load anaconda3/4.4.0
          python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/generate_camisim_config.py \
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
-         -a {input.camisim_abundance} -c 20 --read_sim "wgsim" --read_sim_path "{params.camisim_dir}/tools/wgsim/wgsim" \
-         --errorfree
+         -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -c {params.coverage} --read_sim "wgsim" \
+         --read_sim_path "{params.camisim_dir}/tools/wgsim/wgsim" --errorfree \
          '''
 
 rule run_camisim:
     input:
-        camisim_configfile = 'camisim_config_snaked.ini'
+        camisim_configfile = 'camisim_config_{sample}.ini'
     output:
-        concat_results_r1 = 'camisim_out/simulated_metagenome_r1.gz',
-        concat_results_r2 = 'camisim_out/simulated_metagenome_r2.gz'
+        concat_results_r1 = 'camisim_out/{sample}/simulated_{sample}_r1.gz',
+        concat_results_r2 = 'camisim_out/{sample}/simulated_{sample}_r2.gz'
     shell:
         '''module load anaconda2/4.4.0
         python2 {CAMISIM_DIR}/metagenomesimulation.py {input.camisim_configfile}
-        cat camisim_out/*/reads/*1.fq.gz > {output.concat_results_r1}
-        cat camisim_out/*/reads/*2.fq.gz > {output.concat_results_r2}
+        cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
+        cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
 #rule cleanup_camisim: TODO! Move old result files, clear out old internal data
 #    input:
@@ -56,56 +78,58 @@ rule run_camisim:
 
 rule fastqc:
     input:
-          reads = 'camisim_out/simulated_metagenome_r1.gz'
+          reads = 'camisim_out/{sample}/simulated_{sample}_r1.gz'
     output:
-          qc_data = 'qc/simulated_metagenome_r1_fastqc.html'
+          qc_data = 'qc/{sample}/simulated_{sample}_r1_fastqc.html'
     shell:
          '''module load tools ngs
          module load perl openjdk/14 fastqc/0.11.8
-         fastqc -o qc {input.reads}
+         fastqc -o qc/{wildcards.sample} {input.reads}
          '''
 
 # Quality and adapter trim the raw reads
 rule trim_bbduk:
     input:
-        R1="camisim_out/simulated_metagenome_r1.gz",
-        R2="camisim_out/simulated_metagenome_r2.gz"
+        R1="camisim_out/{sample}/simulated_{sample}_r1.gz",
+        R2="camisim_out/{sample}/simulated_{sample}_r2.gz"
     output:
-        R1="trimReads/simulated_metagenome_r1.trim.fq.gz",
-        R2="trimReads/simulated_metagenome_r2.trim.fq.gz",
-        RS="trimReads/simulated_metagenome_S.trim.fq.gz"
+        R1="trimReads/{sample}/simulated_{sample}_r1.trim.fq.gz",
+        R2="trimReads/{sample}/simulated_{sample}_r2.trim.fq.gz",
+        RS="trimReads/{sample}/simulated_{sample}_S.trim.fq.gz"
     threads: 8
     shell:
         '''module load ngs tools
         module load java/1.8.0
         module load bbmap/36.49
-        bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa
+        bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t \
+        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa
         '''
 
 
 # Do metagenomic assembly using metaSpades
 rule asm_metaspades:
         input:
-            R1="trimReads/simulated_metagenome_r1.trim.fq.gz",
-            R2="trimReads/simulated_metagenome_r2.trim.fq.gz",
-            RS="trimReads/simulated_metagenome_S.trim.fq.gz"
+            R1="trimReads/{sample}/simulated_{sample}_r1.trim.fq.gz",
+            R2="trimReads/{sample}/simulated_{sample}_r2.trim.fq.gz",
+            RS="trimReads/{sample}/simulated_{sample}_S.trim.fq.gz"
         output:
-            fa="metaspades/simulated_scaffolds.fasta"
+            fa="metaspades/{sample}/{sample}_scaffolds.fasta"
         params:
-            dir="metaspades",
-            asm="metaspades/scaffolds.fasta",
-            time="time/metaspades/simulated.time"
+            dir="metaspades/{sample}",
+            asm="metaspades/{sample}/scaffolds.fasta",
+            time="time/metaspades/{sample}.time"
         log:
-            out="logs/asm_metaspades/simulated.out",
-            err="logs/asm_metaspades/simulated.err"
+            out="logs/asm_metaspades/{sample}.out",
+            err="logs/asm_metaspades/{sample}.err"
         benchmark:
-            "benchmarks/simulated.metaspades.bm.txt"
+            "benchmarks/{sample}.metaspades.bm.txt"
         threads: 20
         shell: # specify phred offset - assumed to be 33 for wgsim reads w/o error profile
                 '''
                 module load spades/3.13.0
                 mkdir -p "time/metaspades"
-                /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} -o {params.dir} -k 27,47,67,87,107,127 --memory 700 --phred-offset 33 2> {log.err} 1> {log.out}
+                /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} \
+                -o {params.dir} -k 27,47,67,87,107,127 --memory 700 --phred-offset 33 2> {log.err} 1> {log.out}
             mv {params.asm} {output.fa}
                 '''
 
@@ -114,11 +138,11 @@ rule asm_metaspades:
 # Should only run when final metaspades output and some junk is present
 rule cleanup_metaspades:
     input:
-        dir="metaspades",
-        scaf="metaspades/simulated_metagenome.scaf.min1000.fa",
-        junk="metaspades/contigs.fasta"
+        dir="metaspades/{sample}",
+        scaf="metaspades/{sample}/simulated_{sample}.scaf.min1000.fa",
+        junk="metaspades/{sample}/contigs.fasta"
     output:
-        cleanup="metaspades/cleanup.txt"
+        cleanup="metaspades/{sample}/cleanup.txt"
     threads: 8
     shell:
                 '''
@@ -135,11 +159,11 @@ rule cleanup_metaspades:
 # Remove small scaffolds and add sample prefix to fasta header
 rule filter_scafs:
     input:
-        asm="metaspades/simulated_scaffolds.fasta"
+        asm="metaspades/{sample}/{sample}_scaffolds.fasta"
     output:
-        asm="metaspades/simulated_metagenome.scaf.min1000.fa"
+        asm="metaspades/{sample}/simulated_{sample}.scaf.min1000.fa"
     params:
-        pfx="sim" # TODO - include *some* run identifier?
+        pfx="{sample}" # TODO - include *some* run identifier?
     threads: 1
     shell:
         '''module load ngs tools
@@ -151,16 +175,16 @@ rule filter_scafs:
 # Map reads to assembly to get coverage and depth
 rule map_bbmap:
     input:
-        R1="trimReads/simulated_metagenome_r1.trim.fq.gz",
-        R2="trimReads/simulated_metagenome_r2.trim.fq.gz",
-        fa="metaspades/simulated_metagenome.scaf.min1000.fa"
+        R1="trimReads/{sample}/simulated_{sample}_r1.trim.fq.gz",
+        R2="trimReads/{sample}/simulated_{sample}_r2.trim.fq.gz",
+        fa="metaspades/{sample}/simulated_{sample}.scaf.min1000.fa"
     output:
-        outsam="mapped/simulated.sam",
-        outbam="mapped/simulated.sort.bam",
-        dep="coverage/simulated.txt"
+        outsam="mapped/{sample}.sam",
+        outbam="mapped/{sample}.sort.bam",
+        dep="coverage/{sample}.txt"
     log:
-        out="logs/map_bbmap/simulated.out",
-        err="logs/map_bbmap/simulated.err"
+        out="logs/map_bbmap/{sample}.out",
+        err="logs/map_bbmap/{sample}.err"
 
     threads: 20
     shell:
@@ -179,18 +203,18 @@ rule map_bbmap:
 # Use MetaBat2 to bin scaffolds from sample
 rule metabat2:
     input:
-        asm="metaspades/simulated_metagenome.scaf.min1000.fa",
-        dep="coverage/simulated.txt"
+        asm="metaspades/simulated_{sample}.scaf.min1000.fa",
+        dep="coverage/{sample}.txt"
     output:
-        "metabat2/simulated.bin"
+        "metabat2/{sample}/{sample}.bin"
     params:
-        out="metabat2/simulated.bin", # TODO: is this needed?
-        time="time/metabat2/simulated.time"
+        out="metabat2/{sample}/{sample}.bin", # TODO: is this needed?
+        time="time/metabat2/{sample}.time"
     log:
-                out="logs/metabat2/simulated.out",
-                err="logs/metabat2/simulated.err"
+                out="logs/metabat2/{sample}.out",
+                err="logs/metabat2/{sample}.err"
     benchmark:
-                "benchmarks/simulated.metabat2.bm.txt"
+                "benchmarks/{sample}.metabat2.bm.txt"
 
     threads: 10
     shell: # TODO - does snakemake generate dirs for logs and such?
@@ -200,17 +224,18 @@ rule metabat2:
         module load metabat/2.12.1
         mkdir -p logs/metabat2
         mkdir -p time/metabat2
-        /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} -o {params.out} 2> {log.err} 1> {log.out}
+        /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} \
+        -o {params.out} 2> {log.err} 1> {log.out}
         '''
 
 # Use prodigal to find ORFs in the metagenome and save genes and proteins
 rule findgenes_prodigal:
     input:
-        asm="metaspades/simulated_metagenome.scaf.min1000.fa"
+        asm="metaspades/simulated_{sample}.scaf.min1000.fa"
     output:
-        fna="genes/simulated_genes.fna",
-        faa="genes/simulated_proteins.faa",
-        prodi="genes/simulated_prodigal.txt"
+        fna="genes/{sample}/{sample}_genes.fna",
+        faa="genes/{sample}/{sample}_proteins.faa",
+        prodi="genes/{sample}/{sample}_prodigal.txt"
     threads: 2
     shell:
         '''
@@ -220,10 +245,10 @@ rule findgenes_prodigal:
 # Run checkm on the MAGs to estimate taxonomy and quality
 rule checkm:
         input:
-                dir="metabat2"
+                dir="metabat2/{sample}"
         output:
-                txt="checkm/simulated.checkm.txt",
-                dir="checkm/simulated.checkm"
+                txt="checkm/{sample}.checkm.txt",
+                dir="checkm/{sample}.checkm"
         threads: 20
         shell:
                 '''

@@ -73,11 +73,15 @@ def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]
     return record_ids, metadata, id_to_genome, id_to_abundance
 
 
-def write_camisim_files(metadata: List[str], id_to_genome: List[str], id_to_abundance: Union[List[str], bool]) -> None:
+def write_camisim_files(metadata: List[str], id_to_genome: List[str], id_to_abundance: Union[List[str], bool],
+                        metafile_name: Optional[str] = "metadata",
+                        idfile_name: Optional[str]="id_to_genome_file") -> None:
     """Generate metadata and ID mapping files for CAMISIM and convert genbanks to FASTA.
         Arguments:
             metadata:           tab-separated strings representing metadata of genome files
             id_to_genome:       tab-separated strings representing genome ID and location of fasta files
+            metafile_name:      optional name for metadata file to be created
+            idfile_name:        optional name for id to fasta file to be created
             id_to_abundance:    if supplied, tab-separated strings mapping genome ID to uniform distributions,
                                 else False
         Returns:
@@ -92,10 +96,10 @@ def write_camisim_files(metadata: List[str], id_to_genome: List[str], id_to_abun
     if not Path('camisim_configfiles').is_dir():
         Path('camisim_configfiles').mkdir()
     # write metadata file
-    with open(Path("camisim_configfiles", "metadata"), "w") as meta_file:
+    with open(Path("camisim_configfiles", metafile_name), "w") as meta_file:
         meta_file.write("\n".join(metadata))
     # write id_to_genome_file
-    with open(Path("camisim_configfiles","id_to_genome_file"), "w") as id_file:
+    with open(Path("camisim_configfiles", idfile_name), "w") as id_file:
         id_file.write("\n".join(id_to_genome))
     if id_to_abundance: # TODO: do we need this? Can we clean it up?
         with open(Path("camisim_configfiles", "id_to_distributions"), "w") as abundance_file:
@@ -118,7 +122,8 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
     # create metadata and fasta files
     genome_ids, metadata, id_to_genome, id_to_abundance = get_metadata_from_records(samples_table['genomes'])
     # write metadata/id to fasta files
-    write_camisim_files(metadata, id_to_genome, id_to_abundance)
+    write_camisim_files(metadata, id_to_genome, id_to_abundance, "metadata_{}".format(sample_col),
+                        "id_to_genome_file{}".format(sample_col))
     # extract genome IDs
     samples_table['genome_id'] = genome_ids
     with open(Path("camisim_configfiles", "id_to_distributions_{}".format(sample_col)), "w") as abundance_file:
