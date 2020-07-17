@@ -16,7 +16,7 @@ rule all_camisim:
         all_r2 = expand('camisim_out/{sample}/simulated_{sample}_r2.gz', sample=SAMPLES)
 
 rule all_qc:
-        input: expand("qc/{sample}/simulated_{sample}_r1.trim_fastqc.html", sample=SAMPLES)
+        input: expand("qc/{sample}/simulated_{sample}_r1_fastqc.html", sample=SAMPLES)
 
 rule all_metaspades:
 	input: expand("metaspades/{sample}/{sample}_scaffolds.fasta", sample=SAMPLES)
