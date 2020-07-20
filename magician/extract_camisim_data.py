@@ -1,4 +1,4 @@
-#import os
+import re
 
 from argparse import ArgumentParser
 from pathlib import Path
@@ -46,10 +46,12 @@ def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]
     # for each input file:
     for genbank in records:
         record = SeqIO.read(genbank, "genbank")  # TODO: this only works with no contigs - adapt for contigs later!
-        #     extract ID: version
-        record_id = record.id.replace(".", "_")
+        #     extract ID: source and identifier
+        # clean up source separately: remove all characters that aren't alphanumeric, - or _
+        sanitized_source = re.sub(r"[^A-Za-z0-9_-]", "", record.annotations["source"].replace(" ", "_"))
+        record_id = "{}_{}".format(sanitized_source, record.id.replace(".", "_"))
         record_ids.append(record_id)
-        #     extract taxonomic ID - there's no pretty way, so stateful parsing time
+        #     extract taxonomic ID
         taxon_id = ""
         with open(genbank, "r") as infile:
             line = infile.readline()
@@ -63,7 +65,7 @@ def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]
         otu_count += 1
         # create and save FASTA file under {original_filename}.fa - not pretty, but avoids double loop
         fasta_path = Path(fasta_dir,
-                          '{}.fa'.format(genbank.stem)).resolve()  # resolves as far as possible, appends the rest
+                          '{}.fa'.format(record_id)).resolve()  # resolves as far as possible, appends the rest
         SeqIO.convert(genbank, "genbank", fasta_path, "fasta")
         # id to file line
         id_to_genome.append("{}\t{}".format(record_id, fasta_path))
