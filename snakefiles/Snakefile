@@ -31,7 +31,7 @@ rule all_checkm:
 
 rule combine_all_bins:
     input:
-        dir=expand("bins_all/{sample}", sample=SAMPLES)
+        merged=expand("bins_all/{sample}/{sample}", sample=SAMPLES)
 
 # rule camisim_metafiles:
 #     params:
@@ -286,11 +286,12 @@ rule combine_bins:
     input:
         metabat_dir = "metabat2/{sample}"
     output:
-        all_binned = directory("bins_all/{sample}/")
+        all_binned = "bins_all/{sample}/{sample}"
     
     shell: '''
-        cp {input.metabat_dir}/*.bin.*.fa {output.all_binned}
-        cp camisim_fasta/*.fa {output.all_binned}
+        cp {input.metabat_dir}/*.bin.*.fa bins_all/{wildcards.sample}/
+        cp camisim_fasta/*.fa bins_all/{wildcards.sample}/
+        touch bins_all/{wildcards.sample}/{wildcards.sample}
         '''
         
 # Compare genomes to each other using dRep
