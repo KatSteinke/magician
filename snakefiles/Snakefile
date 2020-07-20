@@ -103,7 +103,7 @@ rule run_camisim:
         '''
 rule cleanup_camisim: #TODO! Move old result files, clear out old internal data
     input:
-        camisim_resultdir = directory("camisim_out/{sample}")
+        camisim_resultdir = "camisim_out/{sample}"
     output:
         camisim_check_old = "camisim_old_runs/{sample}/{sample}"
     shell: '''
@@ -300,12 +300,12 @@ rule checkm:
 # combine original and MAG'ed genomes
 rule combine_bins:
     input:
-        metabat_dir = "metabat2/{sample}"
+        metabat_dir = "metabat2/{sample}/{sample}.bin"
     output:
         all_binned = "bins_all/{sample}/{sample}"
     
     shell: '''
-        cp {input.metabat_dir}/*.bin.*.fa bins_all/{wildcards.sample}/
+        cp metabat2/{wildcards.sample}/*.bin.*.fa bins_all/{wildcards.sample}/
         cp camisim_fasta_{wildcards.sample}/*.fa bins_all/{wildcards.sample}/
         touch bins_all/{wildcards.sample}/{wildcards.sample}
         '''
@@ -313,7 +313,8 @@ rule combine_bins:
 # Compare genomes to each other using dRep
 rule drep_sample:
         input:
-                dir="bins_all/{sample}"
+                dir="bins_all/{sample}",
+                check_file = "bins_all/{sample}/{sample}"
         output:
                 test="drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf"
         params:
