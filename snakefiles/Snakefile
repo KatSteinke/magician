@@ -15,6 +15,9 @@ rule all_camisim:
         all_r1 = expand('camisim_out/{sample}/simulated_{sample}_r1.gz', sample=SAMPLES),
         all_r2 = expand('camisim_out/{sample}/simulated_{sample}_r2.gz', sample=SAMPLES)
 
+rule clean_all_camisim:
+    input: expand("camisim_old_runs/{sample}/{sample}", sample=SAMPLES)
+
 rule all_qc:
         input: expand("qc/{sample}/simulated_{sample}_r1_fastqc.html", sample=SAMPLES)
 
@@ -98,9 +101,17 @@ rule run_camisim:
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
-#rule cleanup_camisim: TODO! Move old result files, clear out old internal data
-#    input:
-#        camisim_resultdir = ''
+rule cleanup_camisim: #TODO! Move old result files, clear out old internal data
+    input:
+        camisim_resultdir = directory("camisim_out/{sample}")
+    output:
+        camisim_check_old = "camisim_old_runs/{sample}/{sample}"
+    shell: '''
+        mv {input.camisim_resultdir}/*_*_sample_0 camisim_old_runs/{wildcards.sample}
+        rm {input.camisim_resultdir}/internal/genome_locations.tsv
+        rm {input.camisim_resultdir}/internal/meta_data.tsv
+        touch camisim_old_runs/{wildcards.sample}/{wildcards.sample}
+        '''
 
 rule fastqc:
     input:
