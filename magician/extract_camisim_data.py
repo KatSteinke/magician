@@ -9,15 +9,15 @@ import pandas as pd
 from Bio import SeqIO
 
 
-def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]=False) -> Tuple[List[str],
-                                                                                                List[str],
-                                                                                                List[str],
-                                                                                                Union[List[str], bool]]:
+def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]=False,
+                              fasta_dir: Optional[str]="camisim_fasta") -> Tuple[List[str], List[str], List[str],
+                                                                                 Union[List[str], bool]]:
     """Extract metadata and genome IDs from a list of Genbank files, and convert the files
      to FASTA.
      Arguments:
          records:           Paths to the respective genbank files
          make_abundance:    flag for generating a tsv file specifying even abundance for genomes
+         fasta_dir:         Directory to write fasta files to
      Returns:
          A list of genome IDs,
          a list of metadata lines,
@@ -41,8 +41,8 @@ def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]
         common_abundance = 1 / len(records)
         id_to_abundance = []
     # check if fasta dir exists
-    if not Path('camisim_fasta').is_dir():
-        Path('camisim_fasta').mkdir()
+    if not Path(fasta_dir).is_dir():
+        Path(fasta_dir).mkdir()
     # for each input file:
     for genbank in records:
         record = SeqIO.read(genbank, "genbank")  # TODO: this only works with no contigs - adapt for contigs later!
@@ -62,7 +62,7 @@ def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]
         metadata.append("{}\t{}\t{}\tknown_strain".format(record_id, otu_count, taxon_id))
         otu_count += 1
         # create and save FASTA file under {original_filename}.fa - not pretty, but avoids double loop
-        fasta_path = Path('camisim_fasta',
+        fasta_path = Path(fasta_dir,
                           '{}.fa'.format(genbank.stem)).resolve()  # resolves as far as possible, appends the rest
         SeqIO.convert(genbank, "genbank", fasta_path, "fasta")
         # id to file line
@@ -120,7 +120,8 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
     """
     samples_table = pd.read_csv(samples_file, sep="\t", index_col=False)
     # create metadata and fasta files
-    genome_ids, metadata, id_to_genome, id_to_abundance = get_metadata_from_records(samples_table['genomes'])
+    genome_ids, metadata, id_to_genome, id_to_abundance = get_metadata_from_records(samples_table['genomes'],
+                                                                                    fasta_dir="camisim_fasta_{}".format(sample_col))
     # write metadata/id to fasta files
     write_camisim_files(metadata, id_to_genome, id_to_abundance, "metadata_{}".format(sample_col),
                         "id_to_genome_file_{}".format(sample_col))
