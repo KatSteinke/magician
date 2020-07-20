@@ -32,6 +32,11 @@ rule all_checkm:
 rule combine_all_bins:
     input:
         merged=expand("bins_all/{sample}/{sample}", sample=SAMPLES)
+        
+rule all_drep:
+    input: 
+        test = expand("drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf", sample=SAMPLES)
+        
 
 # rule camisim_metafiles:
 #     params:
@@ -295,7 +300,7 @@ rule combine_bins:
         '''
         
 # Compare genomes to each other using dRep
-rule drep_all:
+rule drep_sample:
         input:
                 dir="bins_all/{sample}"
         output:
