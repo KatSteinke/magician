@@ -306,7 +306,7 @@ rule combine_bins:
     
     shell: '''
         cp {input.metabat_dir}/*.bin.*.fa bins_all/{wildcards.sample}/
-        cp camisim_fasta/*.fa bins_all/{wildcards.sample}/
+        cp camisim_fasta_{wildcards.sample}/*.fa bins_all/{wildcards.sample}/
         touch bins_all/{wildcards.sample}/{wildcards.sample}
         '''
         
