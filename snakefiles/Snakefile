@@ -24,6 +24,14 @@ rule all_metaspades:
 rule make_mags:
 	input: expand("metabat2/{sample}/{sample}.bin", sample=SAMPLES)
 
+rule all_checkm:
+    input:
+        txt=expand("checkm/{sample}.checkm.txt", sample=SAMPLES),
+        dir=expand("checkm/{sample}.checkm", sample=SAMPLES)
+
+rule combine_all_bins:
+    input:
+        dir=expand("bins_all/{sample}", sample=SAMPLES)
 
 # rule camisim_metafiles:
 #     params:
@@ -261,10 +269,10 @@ rule checkm:
                 dir="metabat2/{sample}"
         output:
                 txt="checkm/{sample}.checkm.txt",
-                dir="checkm/{sample}.checkm"
+                dir=directory("checkm/{sample}.checkm")
         threads: 20
         shell:
-                '''
+                '''module load ngs tools
         module unload anaconda3/2.2.0
                 module load anaconda2/4.4.0
                 module load prodigal/2.6.2
@@ -272,3 +280,33 @@ rule checkm:
         module load pplacer/1.1.alpha17
         checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {input.dir} {output.dir}
         '''
+
+# combine original and MAG'ed genomes
+rule combine_bins:
+    input:
+        metabat_dir = "metabat2/{sample}"
+    output:
+        all_binned = directory("bins_all/{sample}/")
+    
+    shell: '''
+        cp {input.metabat_dir}/*.bin.*.fa {output.all_binned}
+        cp camisim_fasta/*.fa {output.all_binned}
+        '''
+        
+# Compare genomes to each other using dRep
+rule drep_all:
+        input:
+                dir="bins_all/{sample}"
+        output:
+                test="drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf"
+        params:
+	        outdir="drep_genomes/{sample}"
+        #threads: 40
+        threads: 20
+        shell:
+                '''
+                module load tools ngs
+                module load mash/2.2
+                dRep compare {params.outdir} -p {threads} -ms 1000 -g {input.dir}/*fa
+                '''
+
