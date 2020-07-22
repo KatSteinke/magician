@@ -1,9 +1,6 @@
 #shell.executable("/bin/bash")
 #shell.prefix("source $HOME/.bashrc; ")
 
-#import os
-
-#IDS, = glob_wildcards("genomes/{genome_id}.gb") # get all genomes in genomes dir
 # required: tab-separated file with genbank path to abundance in sample mapping
 with open("sample_distributions.tsv", "r") as samples_file:
     SAMPLES = samples_file.readline().strip().split("\t")[1:] # from the header, take all but the first column's names
@@ -36,7 +33,7 @@ rule all_stats:
     input:
         stat_files = expand("stats/{sample}.tsv", sample=SAMPLES)
 
-rule combine_all_bins:
+rule pool_bins_and_refs_each_sample:
     input:
         merged=expand("bins_all/{sample}/{sample}", sample=SAMPLES)
         
@@ -318,7 +315,7 @@ rule checkm:
         '''
 
 # combine original and MAG'ed genomes
-rule combine_bins:
+rule pool_bins_and_refs_per_sample:
     input:
         metabat_bins = "metabat2/{sample}/{sample}.bin"
     output:
