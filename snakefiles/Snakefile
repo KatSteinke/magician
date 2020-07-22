@@ -32,6 +32,10 @@ rule all_checkm:
         txt=expand("checkm/{sample}.checkm.txt", sample=SAMPLES),
         dir=expand("checkm/{sample}.checkm", sample=SAMPLES)
 
+rule all_stats:
+    input:
+        stat_files = expand("stats/{sample}.tsv", sample=SAMPLES)
+
 rule combine_all_bins:
     input:
         merged=expand("bins_all/{sample}/{sample}", sample=SAMPLES)
@@ -279,6 +283,20 @@ rule findgenes_prodigal:
         prodigal -i {input.asm} -p meta -a {output.faa} -d {output.fna} -o {output.prodi}
         '''
 
+# Get stats on assembled MAGs
+rule sample_stats:
+    input:
+        bins = "metabat2/{sample}/{sample}.bin"
+    output:
+        stats_file = "stats/{sample}.tsv"
+    shell:
+        '''
+        module load ngs tools
+        module load openjdk/14
+        module load bbmap/38.35
+        statswrapper.sh {input.bins}.*.fa > {output.stats_file}
+        '''
+
 # Run checkm on the MAGs to estimate taxonomy and quality
 rule checkm:
         input:
@@ -328,3 +346,4 @@ rule drep_sample:
                 dRep compare {params.outdir} -p {threads} -ms 1000 -g {input.dir}/*fa
                 '''
 
+# TODO: cleanup dRep
