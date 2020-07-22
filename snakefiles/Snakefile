@@ -105,9 +105,10 @@ rule run_camisim:
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
-rule cleanup_camisim: #TODO! Move old result files, clear out old internal data
+rule cleanup_camisim:
     input:
-        camisim_resultdir = "camisim_out/{sample}"
+        camisim_resultdir = "camisim_out/{sample}",
+        camisim_result_check = "camisim_out/{sample}/simulated_{sample}_r1.gz"  # check if this has updated
     output:
         camisim_check_old = "camisim_old_runs/{sample}/{sample}"
     shell: '''
@@ -300,7 +301,8 @@ rule sample_stats:
 # Run checkm on the MAGs to estimate taxonomy and quality
 rule checkm:
         input:
-                dir="metabat2/{sample}"
+                dir="metabat2/{sample}",
+                check_file = "metabat2/{sample}/{sample}.bin"
         output:
                 txt="checkm/{sample}.checkm.txt",
                 dir=directory("checkm/{sample}.checkm")
@@ -318,7 +320,7 @@ rule checkm:
 # combine original and MAG'ed genomes
 rule combine_bins:
     input:
-        metabat_dir = "metabat2/{sample}/{sample}.bin"
+        metabat_bins = "metabat2/{sample}/{sample}.bin"
     output:
         all_binned = "bins_all/{sample}/{sample}"
     
