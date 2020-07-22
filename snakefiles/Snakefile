@@ -267,7 +267,7 @@ rule metabat2:
         mkdir -p logs/metabat2
         mkdir -p time/metabat2
         /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} \
-        -o {params.out} 2> {log.err} 1> {log.out}
+        -o {params.out} --unbinned 2> {log.err} 1> {log.out}
         '''
 
 # Use prodigal to find ORFs in the metagenome and save genes and proteins
