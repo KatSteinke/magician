@@ -30,6 +30,9 @@ def get_sample_size(file_record: Path, coverage: Optional[float]=1) -> float:
         The sample size for obtaining a given average coverage level, given
         the total size of all genomes examined.
     """
+    # sanity check: is the value for coverage above 0?
+    if coverage <= 0:
+        raise ValueError("Coverage must be above 0")
     # get all paths
     with open(file_record, "r") as idfile:
         fasta_paths = [Path(line.strip().split("\t")[1]) for line in idfile]
@@ -53,11 +56,24 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         readsim:        read simulator to use
         readsim_path:   Path to the read simulator to use
         sample:         type of sample to use
-        error_profiles: Path to error profiles, can be blank if using wgsim
         amount_genomes: amount of genomes in the sample
         sample_size:    sample size in Gbp
+        error_profiles: Path to error profiles, can be blank if using wgsim
         abundance_file: Path to file listing abundance for genomes, if given
     """
+    # sanity checks
+    # is the read simulator a valid choice?
+    if not readsim in {"art", "wgsim", "nanosim", "pbsim"}:
+        raise ValueError("{} is not a valid read simulator. Valid options are art, wgsim, nanosim, pbsim.".format(readsim))
+    # is the read simulator not wgsim, but there's no error profile?
+    if not error_profiles and not readsim == "wgsim":
+        raise ValueError("Error profile can only be omitted with wgsim")
+    # is the sample type a valid choice?
+    if not sample in {'replicates', 'timeseries_lognormal', 'timeseries_normal', 'differential'}:
+        raise ValueError(
+            """{} is not a valid sample type. Valid options are 'replicates', 'timeseries_lognormal',\
+             'timeseries_normal', 'differential'.""".format(sample))
+    # TODO: introduce more defaults?
     config_string = '''\
     [Main]
     # maximum number of processes
