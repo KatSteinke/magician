@@ -121,6 +121,8 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
         for each genbank listed in the table.
     """
     samples_table = pd.read_csv(samples_file, sep="\t", index_col=False)
+    # check for any genomes with an abundance of 0 in the current sample, remove these
+    samples_table = samples_table.loc[samples_table[sample_col] != 0]
     # create metadata and fasta files
     genome_ids, metadata, id_to_genome, id_to_abundance = get_metadata_from_records(samples_table['genomes'],
                                                                                     fasta_dir="camisim_fasta_{}".format(sample_col))
