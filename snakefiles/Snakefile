@@ -339,8 +339,7 @@ rule pool_bins_and_refs_per_sample:
 # Compare genomes to each other using dRep
 rule drep_sample:
         input:
-
-                check_file = "bins_all/{sample}/{sample}"
+            check_file = "bins_all/{sample}/{sample}"
         output:
                 test="drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf"
         params:
