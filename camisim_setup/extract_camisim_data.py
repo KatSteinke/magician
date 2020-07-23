@@ -74,7 +74,7 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
     with open(Path("camisim_configfiles", "metadata_{}".format(sample_col)), "w") as meta_file:
         meta_file.write("\n".join(metadata))
     # write id_to_genome_file
-    with open(Path("camisim_configfiles", "id_to_genome_file".format(sample_col)), "w") as id_file:
+    with open(Path("camisim_configfiles", "id_to_genome_file_{}".format(sample_col)), "w") as id_file:
         id_file.write("\n".join(id_to_genome))
     # extract genome IDs
     samples_table['genome_id'] = record_ids
