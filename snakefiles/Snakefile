@@ -176,7 +176,7 @@ rule asm_metaspades:
                 module load spades/3.13.0
                 mkdir -p "time/metaspades"
                 /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} \
-                -o {params.dir} -k 27,47,67,87,107,127 --memory 700 --phred-offset 33 2> {log.err} 1> {log.out}
+                -o {params.dir} -k 27,47,67,87,107,127 --memory 120 --phred-offset 33 2> {log.err} 1> {log.out}
             mv {params.asm} {output.fa}
                 '''
 
@@ -345,8 +345,8 @@ rule drep_sample:
         params:
             indir="bins_all/{sample}",
 	        outdir="drep_genomes/{sample}"
-        #threads: 40
-        threads: 20
+        threads: 40
+        #threads: 20
         shell:
                 '''
                 module load tools ngs
