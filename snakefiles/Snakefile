@@ -306,8 +306,9 @@ rule sample_stats:
 # Run checkm on the MAGs to estimate taxonomy and quality
 rule checkm:
         input:
-                dir="metabat2/{sample}",
                 check_file = "metabat2/{sample}/{sample}.bin"
+        params:
+            dir="metabat2/{sample}"
         output:
                 txt="checkm/{sample}.checkm.txt",
                 dir=directory("checkm/{sample}.checkm")
@@ -319,7 +320,7 @@ rule checkm:
                 module load prodigal/2.6.2
         module load hmmer/3.1b2
         module load pplacer/1.1.alpha17
-        checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {input.dir} {output.dir}
+        checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {params.dir} {output.dir}
         '''
 
 # combine original and MAG'ed genomes
@@ -338,11 +339,12 @@ rule pool_bins_and_refs_per_sample:
 # Compare genomes to each other using dRep
 rule drep_sample:
         input:
-                dir="bins_all/{sample}",
+
                 check_file = "bins_all/{sample}/{sample}"
         output:
                 test="drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf"
         params:
+            indir="bins_all/{sample}",
 	        outdir="drep_genomes/{sample}"
         #threads: 40
         threads: 20
@@ -350,7 +352,7 @@ rule drep_sample:
                 '''
                 module load tools ngs
                 module load mash/2.2
-                dRep compare {params.outdir} -p {threads} -ms 1000 -g {input.dir}/*fa
+                dRep compare {params.outdir} -p {threads} -ms 1000 -g {params.indir}/*fa
                 '''
 
 # TODO: cleanup dRep
