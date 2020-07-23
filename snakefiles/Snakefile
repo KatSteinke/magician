@@ -7,6 +7,14 @@ with open("sample_distributions.tsv", "r") as samples_file:
 
 CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
+rule complete_qc:
+    input:
+        fastqc = expand("qc/{sample}/simulated_{sample}_r1_fastqc.html", sample=SAMPLES),
+        checkm_txt = expand("checkm/{sample}.checkm.txt", sample=SAMPLES),
+        checkm_dir = expand("checkm/{sample}.checkm", sample=SAMPLES),
+        stat_files = expand("stats/{sample}.tsv", sample=SAMPLES),
+        drep_all = expand("drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf", sample=SAMPLES)
+
 rule all_camisim:
     input:
         all_r1 = expand('camisim_out/{sample}/simulated_{sample}_r1.gz', sample=SAMPLES),
