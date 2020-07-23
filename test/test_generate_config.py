@@ -2,7 +2,7 @@ import unittest
 
 from pathlib import Path
 
-import magician.generate_camisim_config as camiconf
+import camisim_setup.generate_camisim_config as camiconf
 
 class TestLineCount(unittest.TestCase):
     def test_file_with_lines(self):

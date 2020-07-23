@@ -60,7 +60,7 @@ rule all_drep:
 #         camisim_abundance = 'camisim_configfiles/id_to_distributions'
 #     shell:
 #         '''module load anaconda3/4.4.0
-#         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/extract_camisim_data.py \
+#         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/camisim_setup/extract_camisim_data.py \
 #          {params.genome_files} --even_abundance
 #         '''
 
@@ -76,7 +76,7 @@ rule camisim_metafiles:
     shell:
         '''module load tools
         module load anaconda3/4.4.0
-        python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/extract_camisim_data.py \
+        python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/camisim_setup/extract_camisim_data.py \
         {input.samplefile} {params.sample_col}
         '''
 
@@ -92,7 +92,7 @@ rule camisim_configfiles:
         camisim_configfile = 'camisim_config_{sample}.ini'
     shell:
          '''module load anaconda3/4.4.0
-         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/magician/generate_camisim_config.py \
+         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/camisim_setup/generate_camisim_config.py \
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
          -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -c {params.coverage} --read_sim "wgsim" \
          --read_sim_path "{params.camisim_dir}/tools/wgsim/wgsim" --errorfree \
