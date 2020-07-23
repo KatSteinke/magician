@@ -9,23 +9,23 @@ import pandas as pd
 from Bio import SeqIO
 
 
-def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]=False,
-                              fasta_dir: Optional[str]="camisim_fasta") -> Tuple[List[str], List[str], List[str],
-                                                                                 Union[List[str], bool]]:
-    """Extract metadata and genome IDs from a list of Genbank files, and convert the files
-     to FASTA.
-     Arguments:
-         records:           Paths to the respective genbank files
-         make_abundance:    flag for generating a tsv file specifying even abundance for genomes
-         fasta_dir:         Directory to write fasta files to
-     Returns:
-         A list of genome IDs,
-         a list of metadata lines,
-         a list of genome ID to fasta file lines, and
-         optionally a list of genome ID to abundance.
-         (Fasta files are also written.)
-     """
-    records = [Path(record) for record in records]
+def get_camisim_per_sample(samples_file: Path, sample_col: str):
+    """From a tab-separated table giving genbank files and their abundance in a given sample,
+    create CAMISIM metadata, genome and abundance files.
+    Arguments:
+        samples_file:   Path to .tsv file
+        sample_col:     column name for sample
+    Returns:
+        A tab-separated metadata file containing genome ID, OTU, NCBI taxid and novelty category,
+        a tab-separated file listing genome ID and abundance,
+        a directory with a fasta file with the sequence of each gbk in the table with nonzero abundance, and
+        a tab-separated file listing the genome ID and path of each fasta file.
+    """
+    samples_table = pd.read_csv(samples_file, sep="\t", index_col=False)
+    # check for any genomes with an abundance of 0 in the current sample, remove these
+    samples_table = samples_table.loc[samples_table[sample_col] != 0]
+    # create metadata and fasta files
+    records = [Path(record) for record in samples_table['genomes']]
     # set up metadata file with "genome_ID\tOTU\tNCBI_ID\tnovelty_category"
     metadata = ["genome_ID\tOTU\tNCBI_ID\tnovelty_category"]
     # initialize OTU count to 1 as we want all to be included
@@ -34,13 +34,8 @@ def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]
     id_to_genome = []
     # save record IDs separately as well
     record_ids = []
-    # set id_to_abundance to False by default unless requested otherwise
-    id_to_abundance = False
-    # if abundance is to be generated:
-    if make_abundance:
-        common_abundance = 1 / len(records)
-        id_to_abundance = []
     # check if fasta dir exists
+    fasta_dir = "camisim_fasta_{}".format(sample_col)
     if not Path(fasta_dir).is_dir():
         Path(fasta_dir).mkdir()
     # for each input file:
@@ -69,86 +64,31 @@ def get_metadata_from_records(records: List[str], make_abundance: Optional[bool]
         SeqIO.convert(genbank, "genbank", fasta_path, "fasta")
         # id to file line
         id_to_genome.append("{}\t{}".format(record_id, fasta_path))
-        if make_abundance:
-            id_to_abundance.append("{}\t{}".format(record_id, common_abundance))
-
-    return record_ids, metadata, id_to_genome, id_to_abundance
 
 
-def write_camisim_files(metadata: List[str], id_to_genome: List[str], id_to_abundance: Union[List[str], bool],
-                        metafile_name: Optional[str] = "metadata",
-                        idfile_name: Optional[str]="id_to_genome_file") -> None:
-    """Generate metadata and ID mapping files for CAMISIM and convert genbanks to FASTA.
-        Arguments:
-            metadata:           tab-separated strings representing metadata of genome files
-            id_to_genome:       tab-separated strings representing genome ID and location of fasta files
-            metafile_name:      optional name for metadata file to be created
-            idfile_name:        optional name for id to fasta file to be created
-            id_to_abundance:    if supplied, tab-separated strings mapping genome ID to uniform distributions,
-                                else False
-        Returns:
-            Writes:
-            A tab-separated metadata file containing genome ID, OTU, NCBI taxid and novelty category,
-            a fasta file with the sequence,
-            a tab-separated file listing the genome ID and path of the fasta file, and
-            optionally, a tab-separated file listing genome ID and abundance
-            for each genbank.
-    """
+    # write metadata/id to fasta files
     # check if dir exists
     if not Path('camisim_configfiles').is_dir():
         Path('camisim_configfiles').mkdir()
     # write metadata file
-    with open(Path("camisim_configfiles", metafile_name), "w") as meta_file:
+    with open(Path("camisim_configfiles", "metadata_{}".format(sample_col)), "w") as meta_file:
         meta_file.write("\n".join(metadata))
     # write id_to_genome_file
-    with open(Path("camisim_configfiles", idfile_name), "w") as id_file:
+    with open(Path("camisim_configfiles", "id_to_genome_file".format(sample_col)), "w") as id_file:
         id_file.write("\n".join(id_to_genome))
-    if id_to_abundance: # TODO: do we need this? Can we clean it up?
-        with open(Path("camisim_configfiles", "id_to_distributions"), "w") as abundance_file:
-            abundance_file.write("\n".join(id_to_abundance))
-
-def get_camisim_per_sample(samples_file: Path, sample_col: str):
-    """From a tab-separated table giving genbank files and their abundance in a given sample,
-    create CAMISIM metadata, genome and abundance files.
-    Arguments:
-        samples_file:   Path to .tsv file
-        sample_col:     column name for sample
-    Returns:
-        A tab-separated metadata file containing genome ID, OTU, NCBI taxid and novelty category,
-        a fasta file with the sequence,
-        a tab-separated file listing genome ID and abundance, and
-        a tab-separated file listing the genome ID and path of the fasta file
-        for each genbank listed in the table.
-    """
-    samples_table = pd.read_csv(samples_file, sep="\t", index_col=False)
-    # check for any genomes with an abundance of 0 in the current sample, remove these
-    samples_table = samples_table.loc[samples_table[sample_col] != 0]
-    # create metadata and fasta files
-    genome_ids, metadata, id_to_genome, id_to_abundance = get_metadata_from_records(samples_table['genomes'],
-                                                                                    fasta_dir="camisim_fasta_{}".format(sample_col))
-    # write metadata/id to fasta files
-    write_camisim_files(metadata, id_to_genome, id_to_abundance, "metadata_{}".format(sample_col),
-                        "id_to_genome_file_{}".format(sample_col))
     # extract genome IDs
-    samples_table['genome_id'] = genome_ids
+    samples_table['genome_id'] = record_ids
     with open(Path("camisim_configfiles", "id_to_distributions_{}".format(sample_col)), "w") as abundance_file:
         abundance_file.write(samples_table.to_csv(sep="\t", header=False, index=False, columns=['genome_id', sample_col]))
 
 
 
 if __name__ == "__main__":
-    # input: list of files
     parser = ArgumentParser(
         description="Prepare CAMISIM metadata and id to file mapping files and create FASTA files from gbks")
-    #parser.add_argument("gbk_files", nargs="+", help="Genbank files for CAMISIM run")
-    #parser.add_argument("--even_abundance", action="store_true",
-    #                    help="Automatically generate abundance file with even distribution")
-    # TODO: add default names for metadata etc files
     parser.add_argument("sample_file", help="Tab-separated file with abundances for samples")
     parser.add_argument("sample_column", help="Column name of sample to extract")
     args = parser.parse_args()
     sample_file = args.sample_file
     sample_column = args.sample_column
-    #abundance = args.even_abundance
-    #create_camisim_files(gbk_files, abundance)
     get_camisim_per_sample(sample_file, sample_column)
