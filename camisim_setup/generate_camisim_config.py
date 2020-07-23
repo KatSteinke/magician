@@ -42,16 +42,15 @@ def get_sample_size(file_record: Path, coverage: Optional[float]=1) -> float:
     return round(coverage*(total_size/1000000000), 2)
 
 
-def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file_name: str, output_dir: str,
+def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, output_dir: str,
                          readsim: str, readsim_path: Path, sample: str,
                          amount_genomes: int, sample_size: float, error_profiles: Optional[Path] = "",
-                         abundance_file: Optional[Path]=""):
+                         abundance_file: Optional[Path]="") -> str:
     """Generate a config file for CAMISIM and write it to a specified filename.
     Arguments:
         camisim_dir:    Path to the directory containing CAMISIM
         meta_file:      Path to the metadata file for CAMISIM
         id_file:        Path to the file linking genome IDs to fasta files
-        file_name:      name of config file to be generated
         output_dir:     output directory for CAMISIM
         readsim:        read simulator to use
         readsim_path:   Path to the read simulator to use
@@ -60,6 +59,8 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         sample_size:    sample size in Gbp
         error_profiles: Path to error profiles, can be blank if using wgsim
         abundance_file: Path to file listing abundance for genomes, if given
+    Returns:
+        A CAMISIM config file with the chosen parameters.
     """
     # sanity checks
     # is the read simulator a valid choice?
@@ -199,8 +200,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, file
         dist_file=abundance_file
     )
     config_string = dedent(config_string)
-    with open(file_name, "w") as outfile:
-        outfile.write(config_string)
+    return config_string
 
 
 if __name__ == "__main__":
@@ -272,5 +272,7 @@ if __name__ == "__main__":
     #calculate amount of genomes and sample size
     genomes = get_file_length(genome_file)
     size_total = get_sample_size(genome_file, coverage)
-    generate_config_file(camisim_dir, metadata, genome_file, filename, out_dir, read_sim, read_sim_path, sample_type,
-                        genomes, size_total, error_profile, abundance_file)
+    config_str = generate_config_file(camisim_dir, metadata, genome_file, out_dir, read_sim, read_sim_path, sample_type,
+                                      genomes, size_total, error_profile, abundance_file)
+    with open(filename, "w") as outfile:
+        outfile.write(config_str)
