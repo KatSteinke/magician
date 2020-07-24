@@ -65,8 +65,8 @@ rule all_drep:
 #         '''
 
 rule camisim_metafiles:
-    input:
-        samplefile = "sample_distributions.tsv"
+#    input:
+#        samplefile = "sample_distributions.tsv"
     params:
         sample_col = "{sample}"
     output:
