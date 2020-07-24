@@ -351,6 +351,7 @@ rule drep_sample:
                 '''
                 module load tools ngs
                 module load mash/2.2
+                module load mummer/3.23
                 dRep compare {params.outdir} -p {threads} -ms 1000 -g {params.indir}/*fa
                 '''
 
