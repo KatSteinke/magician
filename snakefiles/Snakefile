@@ -126,13 +126,15 @@ rule cleanup_camisim:
 
 rule fastqc:
     input:
-          reads = 'camisim_out/{sample}/simulated_{sample}_r1.gz'
+          reads_r1 = 'camisim_out/{sample}/simulated_{sample}_r1.gz',
+          reads_r2 = 'camisim_out/{sample}/simulated_{sample}_r2.gz'
     output:
-          qc_data = 'qc/{sample}/simulated_{sample}_r1_fastqc.html'
+          qc_r1 = 'qc/{sample}/simulated_{sample}_r1_fastqc.html',
+          qc_r2 = 'qc/{sample}/simulated_{sample}_r2_fastqc.html'
     shell:
          '''module load tools ngs
          module load perl openjdk/14 fastqc/0.11.8
-         fastqc -o qc/{wildcards.sample} {input.reads}
+         fastqc -o qc/{wildcards.sample} {input.reads_r1} {input.reads_r2}
          '''
 
 # Quality and adapter trim the raw reads
