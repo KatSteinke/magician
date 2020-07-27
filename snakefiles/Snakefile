@@ -152,7 +152,7 @@ rule trim_bbduk:
         module load java/1.8.0
         module load bbmap/36.49
         bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t \
-        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa
+        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa qin=33
         '''
 
 
@@ -258,7 +258,7 @@ rule metabat2:
     output:
         "metabat2/{sample}/{sample}.bin"
     params:
-        out="metabat2/{sample}/{sample}.bin", # TODO: is this needed?
+        out="metabat2/{sample}/{sample}.bin",
         time="time/metabat2/{sample}.time"
     log:
                 out="logs/metabat2/{sample}.out",
@@ -267,7 +267,7 @@ rule metabat2:
                 "benchmarks/{sample}.metabat2.bm.txt"
 
     threads: 10
-    shell: # TODO - does snakemake generate dirs for logs and such?
+    shell:
         '''
         module load ngs tools
         module load perl

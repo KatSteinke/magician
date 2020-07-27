@@ -5,6 +5,7 @@ from typing import Optional
 
 from Bio import SeqIO
 
+
 # utility function for getting amount of genomes
 def get_file_length(infile: Path) -> int:
     """Count the number of lines in a file.
@@ -219,10 +220,10 @@ if __name__ == "__main__":
                         default=1)
     parser.add_argument('--read_sim', action="store", help="Read simulator to use",
                         choices=["art", "wgsim", "nanosim", "pbsim"],
-                        default="art")  # TODO: improve documentation - what to use when?
+                        default="art")
     parser.add_argument('--read_sim_path', action="store",
                         help="Path to read simulator executable (default: ART shipped with CAMISIM)",
-                        default=False)  # TODO: is this the nice way?
+                        default=False)
     parser.add_argument('--sample_type', action="store",
                         help="Type of different samples to be simulated (default: replicates)",
                         choices=["replicates", "timeseries_lognormal", "timeseries_normal", "differential"],
