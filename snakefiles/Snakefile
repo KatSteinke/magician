@@ -48,7 +48,10 @@ rule pool_bins_and_refs_each_sample:
 rule all_drep:
     input: 
         test = expand("drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf", sample=SAMPLES)
-        
+
+rule clean_all_drep:
+    input:
+        all_checks = expand("drep_old/{sample}/{sample}_move_check", sample=SAMPLES)
 
 # rule camisim_metafiles:
 #     params:
@@ -358,4 +361,14 @@ rule drep_sample:
                 dRep compare {params.outdir} -p {threads} -ms 1000 -g {params.indir}/*fa
                 '''
 
-# TODO: cleanup dRep
+rule cleanup_drep:
+    input:
+         drep_check = "drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf"
+    output:
+          check_file = "drep_old/{sample}/{sample}_move_check"
+
+    shell:
+         '''
+         mv drep_genomes/{wildcards.sample} drep_old/
+         touch drep_old/{wildcards.sample}/{wildcards.sample}_move_check
+         '''
