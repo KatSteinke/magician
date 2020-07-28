@@ -273,6 +273,7 @@ if __name__ == "__main__":
     #calculate amount of genomes and sample size
     genomes = get_file_length(genome_file)
     size_total = get_sample_size(genome_file, coverage)
+
     config_str = generate_config_file(camisim_dir, metadata, genome_file, out_dir, read_sim, read_sim_path, sample_type,
                                       genomes, size_total, error_profile, abundance_file)
     with open(filename, "w") as outfile:
