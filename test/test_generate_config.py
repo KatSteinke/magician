@@ -5,6 +5,7 @@ from textwrap import dedent
 
 import camisim_setup.generate_camisim_config as camiconf
 
+
 class TestLineCount(unittest.TestCase):
     def test_file_with_lines(self):
         line_path = Path('test/data/genomefile_2line')
@@ -17,10 +18,16 @@ class TestLineCount(unittest.TestCase):
 
 class TestGenerateSize(unittest.TestCase):
     def test_only_positive_coverage(self):
-        fasta_path = Path('test/data/NC_000913.3.fa')
+        fasta_path = Path('test/data/id_to_genome_file')
         with self.assertRaisesRegex(ValueError, "Coverage must be above 0"):
             camiconf.get_sample_size(fasta_path, 0)
-    # TODO implement success check
+
+    def test_correct_size(self):
+        test_ecoli_size = 4641652
+        test_bacillus_size = 4215606
+        total_in_gbp_rounded = round((test_bacillus_size + test_ecoli_size)/1000000000, 2)
+        fasta_path = Path('test/data/id_to_genome_file')
+        assert camiconf.get_sample_size(fasta_path, 1) == total_in_gbp_rounded
 
 
 class TestGenerateConfig(unittest.TestCase):
