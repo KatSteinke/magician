@@ -95,8 +95,9 @@ rule camisim_configfiles:
          '''module load anaconda3/4.4.0
          python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/camisim_setup/generate_camisim_config.py \
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
-         -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -c {params.coverage} --read_sim "wgsim" \
-         --read_sim_path "{params.camisim_dir}/tools/wgsim/wgsim" --errorfree \
+         -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -c {params.coverage} --read_sim "art" \
+         --read_sim_path "{params.camisim_dir}/tools/art_illumina-2.3.6/art_illumina" \
+         --error_profile "{params.camisim_dir}/tools/art_illumina-2.3.6/profiles/" 
          '''
 
 rule run_camisim:
