@@ -5,6 +5,7 @@
 with open("sample_distributions.tsv", "r") as samples_file:
     SAMPLES = samples_file.readline().strip().split("\t")[1:] # from the header, take all but the first column's names
 
+# Directory containing CAMISIM, change as appropriate
 CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
 
 rule complete_qc:
@@ -48,25 +49,13 @@ rule pool_bins_and_refs_each_sample:
 rule all_drep:
     input: 
         test = expand("drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf", sample=SAMPLES)
-        
 
-# rule camisim_metafiles:
-#     params:
-#         genome_files = " ".join(expand('genomes/{genome_ids}.gb', genome_ids=IDS))
-#     output:
-#         fastas = expand('camisim_fasta/{genome_ids}.fa', genome_ids=IDS),
-#         camisim_metafile = 'camisim_configfiles/metadata',
-#         camisim_genomefile = 'camisim_configfiles/id_to_genome_file',
-#         camisim_abundance = 'camisim_configfiles/id_to_distributions'
-#     shell:
-#         '''module load anaconda3/4.4.0
-#         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/camisim_setup/extract_camisim_data.py \
-#          {params.genome_files} --even_abundance
-#         '''
+rule clean_all_drep:
+    input:
+        all_checks = expand("drep_old/{sample}/{sample}_move_check", sample=SAMPLES)
 
+# Extract and write metadata
 rule camisim_metafiles:
-#    input:
-#        samplefile = "sample_distributions.tsv"
     params:
         sample_col = "{sample}",
         samplefile = "sample_distributions.tsv"
@@ -81,6 +70,7 @@ rule camisim_metafiles:
         {params.samplefile} {params.sample_col}
         '''
 
+# Write configuration file for Camisim
 rule camisim_configfiles:
     input:
         camisim_metafile = 'camisim_configfiles/metadata_{sample}',
@@ -100,6 +90,7 @@ rule camisim_configfiles:
          --error_profile "{params.camisim_dir}/tools/art_illumina-2.3.6/profiles/" 
          '''
 
+# Run CAMISIM on sample, then make one file each with pooled forward & reverse reads
 rule run_camisim:
     input:
         camisim_configfile = 'camisim_config_{sample}.ini'
@@ -112,6 +103,8 @@ rule run_camisim:
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
+
+# Move CAMISIM result files, clear out genome locations and metadata
 rule cleanup_camisim:
     input:
         camisim_resultdir = "camisim_out/{sample}",
@@ -125,6 +118,7 @@ rule cleanup_camisim:
         touch camisim_old_runs/{wildcards.sample}/{wildcards.sample}
         '''
 
+# Run fastQC on forward/reverse reads
 rule fastqc:
     input:
           reads_r1 = 'camisim_out/{sample}/simulated_{sample}_r1.gz',
@@ -137,7 +131,7 @@ rule fastqc:
          module load perl openjdk/14 fastqc/0.11.8
          fastqc -o qc/{wildcards.sample} {input.reads_r1} {input.reads_r2}
          '''
-
+# ### ADAPTED FROM CODE BY PATRICK MUNK ###
 # Quality and adapter trim the raw reads
 rule trim_bbduk:
     input:
@@ -153,7 +147,7 @@ rule trim_bbduk:
         module load java/1.8.0
         module load bbmap/36.49
         bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t \
-        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa
+        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa qin=33
         '''
 
 
@@ -259,7 +253,7 @@ rule metabat2:
     output:
         "metabat2/{sample}/{sample}.bin"
     params:
-        out="metabat2/{sample}/{sample}.bin", # TODO: is this needed?
+        out="metabat2/{sample}/{sample}.bin",
         time="time/metabat2/{sample}.time"
     log:
                 out="logs/metabat2/{sample}.out",
@@ -268,7 +262,7 @@ rule metabat2:
                 "benchmarks/{sample}.metabat2.bm.txt"
 
     threads: 10
-    shell: # TODO - does snakemake generate dirs for logs and such?
+    shell:
         '''
         module load ngs tools
         module load perl
@@ -359,4 +353,17 @@ rule drep_sample:
                 dRep compare {params.outdir} -p {threads} -ms 1000 -g {params.indir}/*fa
                 '''
 
-# TODO: cleanup dRep
+# ### END ADAPTED CODE ###
+
+# Clean up old dRep results
+rule cleanup_drep:
+    input:
+         drep_check = "drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf"
+    output:
+          check_file = "drep_old/{sample}/{sample}_move_check"
+
+    shell:
+         '''
+         mv drep_genomes/{wildcards.sample} drep_old/
+         touch drep_old/{wildcards.sample}/{wildcards.sample}_move_check
+         '''

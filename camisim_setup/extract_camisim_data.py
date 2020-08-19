@@ -2,7 +2,6 @@ import re
 
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Optional, List, Tuple, Union
 
 import pandas as pd
 
@@ -58,13 +57,12 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
         # create and append metadata line
         metadata.append("{}\t{}\t{}\tknown_strain".format(record_id, otu_count, taxon_id))
         otu_count += 1
-        # create and save FASTA file under {original_filename}.fa - not pretty, but avoids double loop
+        # create and save FASTA file
         fasta_path = Path(fasta_dir,
                           '{}.fa'.format(record_id)).resolve()  # resolves as far as possible, appends the rest
         SeqIO.convert(genbank, "genbank", fasta_path, "fasta")
         # id to file line
         id_to_genome.append("{}\t{}".format(record_id, fasta_path))
-
 
     # write metadata/id to fasta files
     # check if dir exists
@@ -80,7 +78,6 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
     samples_table['genome_id'] = record_ids
     with open(Path("camisim_configfiles", "id_to_distributions_{}".format(sample_col)), "w") as abundance_file:
         abundance_file.write(samples_table.to_csv(sep="\t", header=False, index=False, columns=['genome_id', sample_col]))
-
 
 
 if __name__ == "__main__":
