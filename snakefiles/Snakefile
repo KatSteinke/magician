@@ -142,12 +142,12 @@ rule trim_bbduk:
         R2="trimReads/{sample}/simulated_{sample}_r2.trim.fq.gz",
         RS="trimReads/{sample}/simulated_{sample}_S.trim.fq.gz"
     threads: 8
-    shell:
+    shell: # specify quality score offset if needed - wgsim offset assumed to be 33
         '''module load ngs tools
         module load java/1.8.0
         module load bbmap/36.49
         bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t \
-        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa qin=33
+        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa
         '''
 
 
@@ -169,12 +169,12 @@ rule asm_metaspades:
         benchmark:
             "benchmarks/{sample}.metaspades.bm.txt"
         threads: 20
-        shell: # specify phred offset - assumed to be 33 for wgsim reads w/o error profile
+        shell: # specify phred offset if needed - assumed to be 33 for wgsim reads w/o error profile
                 '''
                 module load spades/3.13.0
                 mkdir -p "time/metaspades"
                 /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} \
-                -o {params.dir} -k 27,47,67,87,107,127 --memory 120 --phred-offset 33 2> {log.err} 1> {log.out}
+                -o {params.dir} -k 27,47,67,87,107,127 --memory 120 2> {log.err} 1> {log.out}
             mv {params.asm} {output.fa}
                 '''
 
