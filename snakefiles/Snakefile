@@ -6,7 +6,7 @@ with open("sample_distributions.tsv", "r") as samples_file:
     SAMPLES = samples_file.readline().strip().split("\t")[1:] # from the header, take all but the first column's names
 
 # Directory containing CAMISIM, change as appropriate
-CAMISIM_DIR = "/home/people/katste/camisim/CAMISIM"
+CAMISIM_DIR = "/home/people/katste/hacked-camisim/CAMISIM"
 
 rule complete_qc:
     input:
@@ -87,7 +87,8 @@ rule camisim_configfiles:
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
          -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -c {params.coverage} --read_sim "art" \
          --read_sim_path "{params.camisim_dir}/tools/art_illumina-2.3.6/art_illumina" \
-         --error_profile "{params.camisim_dir}/tools/art_illumina-2.3.6/profiles/" 
+         --error_profile "{params.camisim_dir}/tools/art_illumina-2.3.6/own_profiles/" \
+         --art_profile_type "own" --profile_basename "testprofile_2019_fc6R" --profile_readlength 150
          '''
 
 # Run CAMISIM on sample, then make one file each with pooled forward & reverse reads
