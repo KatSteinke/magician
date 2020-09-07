@@ -42,24 +42,32 @@ def get_sample_size(file_record: Path, coverage: Optional[float]=1) -> float:
                       for record in SeqIO.parse(fasta_file, "fasta")])
     return round(coverage*(total_size/1000000000), 2)
 
+# TODO: this is becoming a giant almighty function, consider reworking?
+
 
 def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, output_dir: str,
                          readsim: str, readsim_path: Path, sample: str,
                          amount_genomes: int, sample_size: float, error_profiles: Optional[Path] = "",
-                         abundance_file: Optional[Path]="") -> str:
+                         abundance_file: Optional[Path] = "", profile_name: Optional[str] = "mbarc",
+                         own_error_basename: Optional[str] = "",
+                         own_error_readlength: Optional[int] = "") -> str:
     """Generate a config file for CAMISIM and write it to a specified filename.
     Arguments:
-        camisim_dir:    Path to the directory containing CAMISIM
-        meta_file:      Path to the metadata file for CAMISIM
-        id_file:        Path to the file linking genome IDs to fasta files
-        output_dir:     output directory for CAMISIM
-        readsim:        read simulator to use
-        readsim_path:   Path to the read simulator to use
-        sample:         type of sample to use
-        amount_genomes: amount of genomes in the sample
-        sample_size:    sample size in Gbp
-        error_profiles: Path to error profiles, can be blank if using wgsim
-        abundance_file: Path to file listing abundance for genomes, if given
+        camisim_dir:            Path to the directory containing CAMISIM
+        meta_file:              Path to the metadata file for CAMISIM
+        id_file:                Path to the file linking genome IDs to fasta files
+        output_dir:             output directory for CAMISIM
+        readsim:                read simulator to use
+        readsim_path:           Path to the read simulator to use
+        sample:                 type of sample to use
+        amount_genomes:         amount of genomes in the sample
+        sample_size:            sample size in Gbp
+        error_profiles:         Path to error profiles, can be blank if using wgsim
+        abundance_file:         Path to file listing abundance for genomes, if given
+        profile_name:           name of error profile to use; default "mbarc", options "mbarc",
+                                "hi", "mi", "hi150", "own" (requires giving own profile & lengths)
+        own_error_basename:     name of error profile files, without "[1/2].txt", if using own
+        own_error_readlength:   length of reads to simulate with own error profile
     Returns:
         A CAMISIM config file with the chosen parameters.
     """
@@ -75,6 +83,25 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
         raise ValueError(
             """{} is not a valid sample type. Valid options are 'replicates', 'timeseries_lognormal',\
              'timeseries_normal', 'differential'.""".format(sample))
+    # is the profile type a valid choice?
+    if not profile_name in {"hi", "mi", "hi150", "mbarc", "own"}:
+        raise ValueError("""{} is not a valid type of error profile. \
+        Valid options are 'mbarc', 'hi', 'mi', 'hi150', 'own'.""".format(profile_name))
+    # is it a custom profile...
+    if profile_name == "own":
+        # ...and are we using a read simulator that takes these?
+        if readsim == "art":
+            # ...but no values are given?
+            if not own_error_basename:
+                raise ValueError("Base profile name must be given when using custom error profile.")
+            elif not own_error_readlength:
+                raise ValueError("Read length for profile must be given when using custom error profile.")
+        else:
+            raise ValueError("{simulator} doesn't take custom profiles. Use ART or {simulator}'s builtin profiles.".format(simulator=readsim))
+    # conversely, are we getting profile names or read lengths for a default profile?
+    if (own_error_readlength or own_error_basename) and not profile_name == "own":
+        raise ValueError("Custom error profile files and read lengths are only possible when specifying 'own' profiles.")
+
     # TODO: introduce more defaults?
     config_string = '''\
     [Main]
@@ -126,10 +153,16 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     #for wgsim:
     #error rate as <float> (e.g. 0.05 for 5% error rate)
     #blank for nanosim and wgsim
-    profile=mbarc
+    profile={profilename}
     
     # Directory containing error profiles (can be blank for wgsim)
     error_profiles={profile_path}
+    
+    # Custom error profile filenames if using own error profile
+    base_profile_name={basename}
+    
+    # Read length for custom error profile if used
+    profile_read_length={readlength}
     
     #paired end read, insert size (not applicable for nanosim)
     fragments_size_mean=270
@@ -196,6 +229,9 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
         simpath=readsim_path,
         sampletype=sample,
         profile_path=error_profiles,
+        profilename=profile_name,
+        basename=own_error_basename,
+        readlength=own_error_readlength,
         amount=amount_genomes,
         samplesize=sample_size,
         dist_file=abundance_file
@@ -231,6 +267,15 @@ if __name__ == "__main__":
     parser.add_argument("--error_profile", action="store",
                         help="Path to error profiles (overridden by --errorfree). Default: ART error profiles",
                         default=False)
+    parser.add_argument("--art_profile_type", action="store", default="mbarc",
+                        choices=['mbarc', 'hi', 'mi', 'hi150', 'own'],
+                        help="Type of ART error profile: mbarc, hi, mi, hi150, own (default: mbarc)")
+    # TODO: how to handle custom profile arguments?
+    parser.add_argument("--profile_basename", action="store",
+                        help="""Base name of custom error profile, if given (name of files without '[1/2].txt');\
+                         required with 'own' error profile""")
+    parser.add_argument("--profile_readlength", action="store",
+                        help="Read length of custom error profile; required with 'own' error profile", type=int)
     parser.add_argument('--errorfree', action="store_true", help="Don't use an error profile (only works with wgsim)")
     args = parser.parse_args()
 
@@ -249,6 +294,26 @@ if __name__ == "__main__":
             error_profile = camisim_dir / "tools" / "art_illumina-2.3.6" / "profiles"
         else:
             error_profile = Path(args.error_profile).resolve()
+
+    # custom profile arguments default to "" - handling both here for consistency
+    profile_basename = ""
+    profile_readlength = ""
+
+    # sanity check arguments related to custom profile
+    if args.art_profile_type == "own":
+        if args.read_sim == "art":
+            if not args.profile_basename:
+                parser.error("Base name for custom error profile must be given with own error profiles.")
+            elif not args.profile_readlength:
+                parser.error("Read length for the custom error profile must be given with own error profiles.")
+            else:
+                profile_basename = args.profile_basename
+                profile_readlength = args.profile_readlength
+        else:
+            parser.error("Supplying custom error profiles is only possible with ART.")
+
+    if (args.profile_basename or args.profile_readlength) and not args.art_profile_type == "own":
+        parser.error("To use custom error profiles, specify type of error profile as 'own' and use ART.")
 
     # establish remaining paths
     metadata = Path(args.metadata).resolve()
@@ -269,12 +334,14 @@ if __name__ == "__main__":
     read_sim = args.read_sim
     sample_type = args.sample_type
     coverage = float(args.coverage)
+    art_profile_type = args.art_profile_type
 
     #calculate amount of genomes and sample size
     genomes = get_file_length(genome_file)
     size_total = get_sample_size(genome_file, coverage)
 
     config_str = generate_config_file(camisim_dir, metadata, genome_file, out_dir, read_sim, read_sim_path, sample_type,
-                                      genomes, size_total, error_profile, abundance_file)
+                                      genomes, size_total, error_profile, abundance_file, art_profile_type,
+                                      profile_basename, profile_readlength)
     with open(filename, "w") as outfile:
         outfile.write(config_str)
