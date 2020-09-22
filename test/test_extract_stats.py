@@ -10,12 +10,28 @@ import generate_summary.extract_stats as summary_stats
 
 class TestBBStats(unittest.TestCase):
     def test_get_stats(self):
-        true_stats = pd.DataFrame({"bin_name": ["bin_1", "bin_2"], "scaf_bp": [8667507, 8277261], "gc_avg": [0.6, 0.5],
-                                "n_scaffolds": [4, 5], "n_contigs": [5, 6], "scaffold_L50": [2, 3],
-                                "scaffold_N50": [1667507, 1277261]})
+        true_stats = pd.DataFrame({"bin_name": ["sample14_bin_1", "sample14_bin_2"], "scaf_bp": [8667507, 8277261],
+                                   "gc_avg": [0.6, 0.5],
+                                    "n_scaffolds": [4, 5], "n_contigs": [5, 6], "scaffold_L50": [2, 3],
+                                    "scaffold_N50": [1667507, 1277261]})
         stats_file = Path('test/data/fake_bb.csv')
         test_stats = summary_stats.get_bb_stats(stats_file)
-        assert test_stats.equals(true_stats)
+        pd.testing.assert_frame_equal(true_stats, test_stats, check_exact=False, check_less_precise=5)
+
+
+    # Test parsing of reference genome names
+    def test_get_stats_from_reference(self):
+        true_reference = pd.DataFrame({"bin_name": ["Bacillus_cereus_ATCC_14579_NC_004722_1",
+                                                    "Bacillus_subtilis_subsp_subtilis_str_168_NC_000964_3"],
+                                       "scaf_bp": [5411809, 4215606],
+                                       "gc_avg": [0.35281, 0.43514],
+                                       "n_scaffolds": [1, 1],
+                                       "n_contigs": [1, 1],
+                                       "scaffold_L50": [1, 1],
+                                       "scaffold_N50": [5411809, 4215606]})
+        reference_file = Path('test/data/fake_refgenomes.csv')
+        test_reference = summary_stats.get_bb_stats(reference_file)
+        pd.testing.assert_frame_equal(true_reference, test_reference, check_exact=False, check_less_precise=5)
 
 
 class TestCheckMStats(unittest.TestCase):
@@ -29,7 +45,7 @@ class TestCheckMStats(unittest.TestCase):
                                 "Strain heterogeneity": [38.46, 42.86]})
         checkm_file = Path('test/data/fake_checkm.txt')
         test_checkm = summary_stats.get_checkm_stats(checkm_file)
-        assert test_checkm.equals(true_checkm)
+        pd.testing.assert_frame_equal(true_checkm, test_checkm, check_exact=False, check_less_precise=5)
 
 
 class TestDRepStats(unittest.TestCase):
@@ -68,11 +84,4 @@ class TestDRepStats(unittest.TestCase):
         drep_mummer = Path('test/data/Ndb.csv')
         drep_mash = Path('test/data/Mdb.csv')
         test_drep = summary_stats.get_drep_stats(drep_mummer, drep_mash)
-        pd.set_option('display.max_columns', None)
-        print(true_drep.fillna(0).head())
-        print(test_drep.fillna(0).head())
-        compare_drep = pd.concat([test_drep, true_drep]).reset_index(drop=True)
-        compare_groupby = compare_drep.groupby(list(compare_drep.columns))
-        idx = [x[0] for x in compare_groupby.groups.values() if len(x) == 1]
-        print(compare_drep.reindex(idx))
-        assert test_drep.fillna(value=0).equals(true_drep.fillna(value=0))
+        pd.testing.assert_frame_equal(test_drep, true_drep, check_exact=False, check_less_precise=5)

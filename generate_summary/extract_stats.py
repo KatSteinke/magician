@@ -5,7 +5,7 @@ from typing import Tuple
 
 import pandas as pd
 
-
+# TODO: style pass!
 def get_bb_stats(stats_file: pathlib.Path) -> pd.DataFrame:
     """Extract bin name, contig and scaffold counts, size, GC content, N50 and L50
     from a tab-separated file produced by bbtools's statswrapper.sh
@@ -20,8 +20,8 @@ def get_bb_stats(stats_file: pathlib.Path) -> pd.DataFrame:
                                                                                'scaf_L50']]
     # N50 and L50 are switched around in BBTools - switch them back
     stats = stats.rename(columns={"filename": "bin_name", "scaf_N50": "scaffold_L50", "scaf_L50": "scaffold_N50"})
-    # extract bin name from file name
-    stats['bin_name'] = stats['bin_name'].apply(lambda x: '_'.join(x.split('.')[-3:-1]))
+    # extract bin name from file name - TODO: make this more elegant than a double-replace?
+    stats['bin_name'] = stats['bin_name'].apply(lambda x: (x.split('/')[-1].replace('.fa', '').replace('.', '_')))
     return stats
 
 
@@ -77,13 +77,11 @@ def get_drep_stats(mummer_file: pathlib.Path, all_bins: pathlib.Path) -> pd.Data
     # cut df down to query, reference, ANI, query and reference coverage
     mummer_anis = mummer_anis[['query', 'reference', 'ref_coverage', 'query_coverage', 'ani']].reset_index(drop=True)
     genomes, bins = get_bins_and_genomes(all_bins)
-    # check which genomes are not in 'query' and append these with no closest bin, ... - try inverting differently?
-    #genomes_without_bin = genomes[genomes['genome2'].isin(mummer_anis['querry']) == False].reset_index(drop=True)
+    # check which genomes are not in 'query' and append these with no closest bin, ....
     genomes_without_bin = genomes[~genomes['genome2'].isin(mummer_anis['query'])].reset_index(drop=True)
     genomes_without_bin = genomes_without_bin.rename(columns={'genome2': 'query'})
     mummer_anis = mummer_anis.append(genomes_without_bin, ignore_index=True)
     # check which bins are not in 'reference' and append these ditto
-    #bins_without_ref = bins[bins['genome2'].isin(mummer_anis['reference']) == False].reset_index(drop=True)
     bins_without_ref = bins[~bins['genome2'].isin(mummer_anis['reference'])].reset_index(drop=True)
     bins_without_ref = bins_without_ref.rename(columns={"genome2": "reference"})
     mummer_anis= mummer_anis.append(bins_without_ref, ignore_index=True)
@@ -109,21 +107,32 @@ def write_summaries(bb_stats: pd.DataFrame, checkm_stats: pd.DataFrame, drep_sta
 if __name__ == "__main__":
     # TODO: rework help!!!!
     parser = ArgumentParser(description="Extract genome statistics from CheckM, dRep and bbstats output.")
-    parser.add_argument("stats", action="store", help="BBstats file")
+    parser.add_argument("stats", action="store", help="BBstats file for bins")
+    parser.add_argument("genome_stats", action="store", help="BBstats file for input genomes")
     parser.add_argument("checkm", action="store", help="CheckM file")
     parser.add_argument("drep_mash", action="store", help="dRep Mash file")
     parser.add_argument("drep_mummer", action="store", help="dRep Mummer file")
-    parser.add_argument("-o", "--outfile", action="store", help="name of excel file to write to", default="samplestats.xls")
+    parser.add_argument("-o", "--outfile", action="store", help="name of excel file to write to",
+                        default="samplestats.xlsx")
     args = parser.parse_args()
 
     stats = pathlib.Path(args.stats).resolve()
+    original_stats = pathlib.Path(args.genome_stats).resolve()
     checkm = pathlib.Path(args.checkm).resolve()
     mash = pathlib.Path(args.drep_mash).resolve()
     mummer = pathlib.Path(args.drep_mummer).resolve()
     outfile = pathlib.Path(args.outfile).resolve()
 
+    # Extract stats for both MAGs and original genomes
     bb_stats = get_bb_stats(stats)
+    # mark the synthetic MAGs as such by adding a column
+    bb_stats['genome_type'] = 'synthetic_MAG'
+    # original genome stats for comparison
+    reference_stats = get_bb_stats(original_stats)
+    reference_stats['genome_type'] = 'reference'
+    complete_stats = bb_stats.append(reference_stats, ignore_index=True)
+
     checkm_stats = get_checkm_stats(checkm)
     drep_stats = get_drep_stats(mummer, mash)
 
-    write_summaries(bb_stats, checkm_stats, drep_stats, outfile)
+    write_summaries(complete_stats, checkm_stats, drep_stats, outfile)
