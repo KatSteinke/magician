@@ -1,0 +1,3 @@
+n_scaffolds	n_contigs	scaf_bp	contig_bp	gap_pct	scaf_N50	scaf_L50	ctg_N50	ctg_L50	scaf_N90	scaf_L90	ctg_N90	ctg_L90	scaf_max	ctg_max	scaf_n_gt50K	scaf_pct_gt50K	gc_avg	gc_std	filename
+4	5	8667507	8667507	0	2	1667507	2	1667507	257	6020	257	6020	73075	73075	3	3.74	0.6	0.03098	/home/projects/cge/data/projects/other/simulatedMAGpipeline/metabat2/sample14/sample14.bin.1.fa
+5	6	8277261	8277261	0	3	1277261	3	1277261	579	2757	579	2757	23973	23973	0	0	0.5	0.02692	/home/projects/cge/data/projects/other/simulatedMAGpipeline/metabat2/sample14/sample14.bin.2.fa
