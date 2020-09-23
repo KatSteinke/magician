@@ -35,7 +35,7 @@ class TestBBStats(unittest.TestCase):
 
 class TestCheckMStats(unittest.TestCase):
     def test_get_checkm(self):
-        true_checkm = pd.DataFrame({"Bin Id": ["sample13.bin.1", "sample13.bin.2"],
+        true_checkm = pd.DataFrame({"Bin Id": ["sample13_bin_1", "sample13_bin_2"],
                                 "Marker lineage": ["f__Enterobacteriaceae (UID5124)", "f__Streptomycetaceae (UID2048)"],
                                 "# genomes": [134, 60], "# markers": [1173, 460], "# marker sets": [336, 233],
                                 "0_markers": [79, 24], "1_marker": [1068, 429], "2_markers": [26, 7],
@@ -50,33 +50,29 @@ class TestCheckMStats(unittest.TestCase):
 class TestDRepStats(unittest.TestCase):
     def test_get_genomes(self):
         drep_mash = Path('test/data/Mdb.csv')
-        true_genomes = pd.DataFrame({"genome2": ["Streptomyces_coelicolor_A32_NC_003888_3.fa",
-                                                 "Escherichia_coli_str_K-12_substr_MG1655_NC_000913_3.fa",
-                                                 "Klebsiella_pneumoniae_subsp_pneumoniae_CP009208_1.fa",
-                                             "Salinispora_tropica_CNB-440_NC_009380_1.fa"]})
-        true_bins = pd.DataFrame({"genome2": ["test_hiseq_2500.bin.6.fa",
-                                                "test_hiseq_2500.bin.4.fa",
-                                                "test_hiseq_2500.bin.9.fa",
-                                                "test_hiseq_2500.bin.2.fa"]})
+        true_genomes = pd.DataFrame({"genome2": ["Streptomyces_coelicolor_A32_NC_003888_3",
+                                                 "Escherichia_coli_str_K-12_substr_MG1655_NC_000913_3",
+                                                 "Klebsiella_pneumoniae_subsp_pneumoniae_CP009208_1",
+                                             "Salinispora_tropica_CNB-440_NC_009380_1"]})
+        true_bins = pd.DataFrame({"genome2": ["test_hiseq_2500_bin_6",
+                                            "test_hiseq_2500_bin_4",
+                                            "test_hiseq_2500_bin_9",
+                                            "test_hiseq_2500_bin_2"]})
         test_genomes, test_bins = summary_stats.get_bins_and_genomes(drep_mash)
-        print(true_genomes.head())
-        print(test_genomes.head())
-        print(true_bins.head())
-        print(test_bins.head())
         assert test_genomes.equals(true_genomes)
         assert test_bins.equals(true_bins)
 
     def test_get_drep(self):
-        true_drep = pd.DataFrame({"query": ["Streptomyces_coelicolor_A32_NC_003888_3.fa",
-                                             "Salinispora_tropica_CNB-440_NC_009380_1.fa",
-                                             "Escherichia_coli_str_K-12_substr_MG1655_NC_000913_3.fa",
-                                             "Klebsiella_pneumoniae_subsp_pneumoniae_CP009208_1.fa",
+        true_drep = pd.DataFrame({"query": ["Streptomyces_coelicolor_A32_NC_003888_3",
+                                             "Salinispora_tropica_CNB-440_NC_009380_1",
+                                             "Escherichia_coli_str_K-12_substr_MG1655_NC_000913_3",
+                                             "Klebsiella_pneumoniae_subsp_pneumoniae_CP009208_1",
                                              np.nan],
-                                  "reference": ["test_hiseq_2500.bin.2.fa",
-                                                "test_hiseq_2500.bin.6.fa",
-                                                "test_hiseq_2500.bin.9.fa",
+                                  "reference": ["test_hiseq_2500_bin_2",
+                                                "test_hiseq_2500_bin_6",
+                                                "test_hiseq_2500_bin_9",
                                                 np.nan,
-                                                "test_hiseq_2500.bin.4.fa"],
+                                                "test_hiseq_2500_bin_4"],
                                   "ref_coverage": [0.9987903, 0.94825554, 0.96552, np.nan, np.nan],
                                   "query_coverage": [0.95382077, 0.98048997, 0.9568264, np.nan, np.nan],
                                   "ani": [0.9999186, 0.9999351, 0.9998399, np.nan, np.nan]})

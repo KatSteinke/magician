@@ -33,10 +33,11 @@ def get_checkm_stats(checkm_file: pathlib.Path) -> pd.DataFrame:
         Taxonomy and absence/presence data for marker genes for all bins.
     """
     checkm_stats = pd.read_csv(checkm_file, sep="\t")
-    # TODO: do we need to unify naming?
     # rename amount of marker genes for clarity
     checkm_stats = checkm_stats.rename(columns={'0': '0_markers', '1': '1_marker', '2': '2_markers', '3': '3_markers',
                                         '4': '4_markers', '5': '5_markers'})
+    # unify bin naming for easier comparison
+    checkm_stats["Bin Id"] = checkm_stats["Bin Id"].apply(lambda x: x.replace('.', '_'))
     return checkm_stats
 
 
@@ -57,6 +58,11 @@ def get_bins_and_genomes(mash_file: pathlib.Path) -> Tuple[pd.DataFrame, pd.Data
     bins = bins_and_genomes[bins_and_genomes['genome2'].str.contains('.bin.',
                                                                      regex=False)].drop_duplicates(
         subset=["genome2"])[['genome2']].reset_index(drop=True)
+
+    # unify naming
+    genomes['genome2'] = genomes['genome2'].apply(lambda x: x.replace('.fa', '').replace('.', '_'))
+    bins['genome2'] = bins['genome2'].apply(lambda x: x.replace('.fa', '').replace('.', '_'))
+
     return genomes, bins
 
 
@@ -71,10 +77,18 @@ def get_drep_stats(mummer_file: pathlib.Path, all_bins: pathlib.Path) -> pd.Data
     mummer_anis = pd.read_csv(mummer_file, sep=",")
     # fix typos
     mummer_anis = mummer_anis.rename(lambda x: x.replace('querry', 'query'), axis="columns")
+
     # drop all lines that just compare a file with itself
     mummer_anis = mummer_anis.drop(mummer_anis[mummer_anis['query'] == mummer_anis['reference']].index)
-    # for each cluster, take everything where the reference contains '.bin.'
+
+    # for each cluster, take everything where the reference contains '.bin.' - gets all relevant comparisons
+    # while dropping the doubles
     mummer_anis = mummer_anis[mummer_anis['reference'].str.contains('.bin.', regex=False)]
+
+    # unify genome/bin names for easier comparison with other stats
+    mummer_anis['query'] = mummer_anis['query'].apply(lambda x: x.replace('.fa', '').replace('.', '_'))
+    mummer_anis['reference'] = mummer_anis['reference'].apply(lambda x: x.replace('.fa', '').replace('.', '_'))
+
     # cut df down to query, reference, ANI, query and reference coverage
     mummer_anis = mummer_anis[['query', 'reference', 'ref_coverage', 'query_coverage', 'ani']].reset_index(drop=True)
     genomes, bins = get_bins_and_genomes(all_bins)
@@ -86,6 +100,7 @@ def get_drep_stats(mummer_file: pathlib.Path, all_bins: pathlib.Path) -> pd.Data
     bins_without_ref = bins[~bins['genome2'].isin(mummer_anis['reference'])].reset_index(drop=True)
     bins_without_ref = bins_without_ref.rename(columns={"genome2": "reference"})
     mummer_anis= mummer_anis.append(bins_without_ref, ignore_index=True)
+
     return mummer_anis
 
 
