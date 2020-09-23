@@ -48,20 +48,6 @@ class TestCheckMStats(unittest.TestCase):
 
 
 class TestDRepStats(unittest.TestCase):
-    def test_get_genomes(self):
-        drep_mash = Path('test/data/Mdb.csv')
-        true_genomes = pd.DataFrame({"genome2": ["Streptomyces_coelicolor_A32_NC_003888_3",
-                                                 "Escherichia_coli_str_K-12_substr_MG1655_NC_000913_3",
-                                                 "Klebsiella_pneumoniae_subsp_pneumoniae_CP009208_1",
-                                             "Salinispora_tropica_CNB-440_NC_009380_1"]})
-        true_bins = pd.DataFrame({"genome2": ["test_hiseq_2500_bin_6",
-                                            "test_hiseq_2500_bin_4",
-                                            "test_hiseq_2500_bin_9",
-                                            "test_hiseq_2500_bin_2"]})
-        test_genomes, test_bins = summary_stats.get_bins_and_genomes(drep_mash)
-        assert test_genomes.equals(true_genomes)
-        assert test_bins.equals(true_bins)
-
     def test_get_drep(self):
         true_drep = pd.DataFrame({"query": ["Streptomyces_coelicolor_A32_NC_003888_3",
                                              "Salinispora_tropica_CNB-440_NC_009380_1",

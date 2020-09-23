@@ -3,6 +3,7 @@ import pathlib
 from argparse import ArgumentParser
 from typing import Tuple
 
+import numpy as np
 import pandas as pd
 
 
@@ -42,30 +43,6 @@ def get_checkm_stats(checkm_file: pathlib.Path) -> pd.DataFrame:
     return checkm_stats
 
 
-def get_bins_and_genomes(mash_file: pathlib.Path) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Extract list of all reference genomes and bins from dRep's Mash clustering output (Mdb.csv).
-    Arguments:
-        mash_file: Path to Mash clustering file (Mdb.csv)
-    Returns:
-        All unique genomes, and all unique bins, used in the dRep clustering.
-    """
-    # obtain a list of all genomes and bins by selecting the unique entries for genome_2 from Mdb.csv
-    bins_and_genomes = pd.read_csv(mash_file, sep=",")
-    # genomes are all that don't contain '.bin.'
-    genomes = bins_and_genomes[~bins_and_genomes['genome2'].str.contains('.bin.',
-                                                                         regex=False)].drop_duplicates(
-        subset=["genome2"])[['genome2']].reset_index(drop=True)
-    # bins are the opposite
-    bins = bins_and_genomes[bins_and_genomes['genome2'].str.contains('.bin.',
-                                                                     regex=False)].drop_duplicates(
-        subset=["genome2"])[['genome2']].reset_index(drop=True)
-
-    # unify naming
-    genomes['genome2'] = genomes['genome2'].apply(lambda x: x.replace('.fa', '').replace('.', '_'))
-    bins['genome2'] = bins['genome2'].apply(lambda x: x.replace('.fa', '').replace('.', '_'))
-
-    return genomes, bins
-
 
 def get_drep_stats(mummer_file: pathlib.Path, all_bins: pathlib.Path) -> pd.DataFrame:
     """Extract ANI from comma-separated file produced by dRep's Mummer-based ANI step.
@@ -84,41 +61,28 @@ def get_drep_stats(mummer_file: pathlib.Path, all_bins: pathlib.Path) -> pd.Data
     mummer_anis_original['reference'] = mummer_anis_original['reference'].apply(lambda x:
                                                                                 x.replace('.fa', '').replace('.', '_'))
 
-    # drop all lines that just compare a file with itself
+    # Goal: select one line per primary cluster, where bins are in reference and originals are in query
+    # for self-comparisons, if the line doesn't contain "_bin_", delete all but cluster number and 'query'
+    # if it does, delete all but cluster number and 'reference'
+
+    # drop all self-comparisons initially
     mummer_anis = mummer_anis_original.drop(mummer_anis_original[mummer_anis_original['query']
                                                                  == mummer_anis_original['reference']].index)
-
-    # for each cluster, take everything where the reference contains '_bin_' - gets all relevant comparisons
-    # while dropping the doubles
+    # still leaves two rows per primary cluster - select only these where bins are in reference
     mummer_anis = mummer_anis[mummer_anis['reference'].str.contains('_bin_', regex=False)]
-
-    # cut df down to query, reference, ANI, query and reference coverage, and primary cluster
+    # re-add all primary clusters only consisting of one member (singletons)
+    mummer_anis = mummer_anis.append(mummer_anis_original.groupby("primary_cluster").filter(lambda x: len(x) == 1),
+                                     ignore_index=True)
     mummer_anis = mummer_anis[['query', 'reference', 'ref_coverage', 'query_coverage', 'ani',
                                'primary_cluster']].reset_index(drop=True)
+    # self-comparisons are meaningless for our table, replace by NAN
+    mummer_anis.loc[(mummer_anis['query'] == mummer_anis['reference'])
+                    & (mummer_anis['reference'].str.contains('_bin_', regex=False)),
+                    ['query', 'ref_coverage', 'query_coverage', 'ani']] = np.nan
 
-    # TODO: possible to get smarter with dropping duplicates & setting fields to NA to avoid using second file & joining?
-    genomes, bins = get_bins_and_genomes(all_bins)
-
-    # check which genomes are not in 'query' and append these
-    genomes_without_bin = genomes[~genomes['genome2'].isin(mummer_anis['query'])].reset_index(drop=True)
-    genomes_without_bin = genomes_without_bin.rename(columns={'genome2': 'query'})
-    # get primary clusters for these:
-    # inner join genomes_without_bin and unique queries & primary clusters from original Mummer dataframe
-    # on query ID
-    genomes_without_bin = pd.merge(genomes_without_bin,
-                                   mummer_anis_original[['query', 'primary_cluster']].drop_duplicates(),
-                                   on='query').reset_index(drop=True)
-
-    mummer_anis = mummer_anis.append(genomes_without_bin, ignore_index=True)
-    # check which bins are not in 'reference' and append these as well
-    bins_without_ref = bins[~bins['genome2'].isin(mummer_anis['reference'])].reset_index(drop=True)
-    bins_without_ref = bins_without_ref.rename(columns={"genome2": "reference"})
-    # find primary cluster numbers here as well
-    bins_without_ref = pd.merge(bins_without_ref,
-                                mummer_anis_original[['reference', 'primary_cluster']].drop_duplicates(),
-                                on='reference').reset_index(drop=True)
-
-    mummer_anis= mummer_anis.append(bins_without_ref, ignore_index=True)
+    mummer_anis.loc[(mummer_anis['query'] == mummer_anis['reference'])
+                    & (~mummer_anis['reference'].str.contains('_bin_', regex=False)),
+                    ['reference', 'ref_coverage', 'query_coverage', 'ani']] = np.nan
 
     return mummer_anis
 
