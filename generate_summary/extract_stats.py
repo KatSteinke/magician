@@ -1,7 +1,6 @@
 import pathlib
 
 from argparse import ArgumentParser
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -44,11 +43,10 @@ def get_checkm_stats(checkm_file: pathlib.Path) -> pd.DataFrame:
 
 
 
-def get_drep_stats(mummer_file: pathlib.Path, all_bins: pathlib.Path) -> pd.DataFrame:
+def get_drep_stats(mummer_file: pathlib.Path) -> pd.DataFrame:
     """Extract ANI from comma-separated file produced by dRep's Mummer-based ANI step.
     Arguments:
         mummer_file:    Path to Ndb.csv
-        all_bins:       Path to Mdb.csv
     Returns:
         Closest bin for each reference with ANI and coverage.
     """
@@ -124,7 +122,6 @@ if __name__ == "__main__":
     parser.add_argument("genome_stats", action="store", help="Path to BBstats file giving stats of reference genomes")
     parser.add_argument("checkm", action="store", help="Path to CheckM file for bins")
     parser.add_argument("genome_checkm", action="store", help="Path to CheckM file for reference genomes")
-    parser.add_argument("drep_mash", action="store", help="Path to dRep Mash file (Mdb.csv)")
     parser.add_argument("drep_mummer", action="store", help="Path to dRep Mummer file (Ndb.csv)")
     parser.add_argument("-o", "--outfile", action="store",
                         help="Name of Excel file to write to (recommended extension: .xlsx) (default: samplestats.xlsx)",
@@ -140,7 +137,7 @@ if __name__ == "__main__":
     mummer = pathlib.Path(args.drep_mummer).resolve()
     outfile = pathlib.Path(args.outfile).resolve()
 
-    drep_stats = get_drep_stats(mummer, mash)
+    drep_stats = get_drep_stats(mummer)
     # Extract stats for both MAGs and original genomes
     bb_stats = get_bb_stats(stats)
     reference_stats = get_bb_stats(original_stats)

@@ -420,15 +420,15 @@ rule summarize_results:
     input: # TODO implement ref genome checkm
          bin_stats = "stats/{sample}.tsv",
          ref_stats = "stats/{sample}_refgenomes.tsv",
-         bin_checkm = "checkm/{sample}.txt",
+         bin_checkm = "checkm/{sample}.checkm.txt",
+         ref_checkm = "checkm/{sample}_refgenomes.checkm.txt",
          drep_mummer = "drep_genomes/{sample}/data_tables/Ndb.csv",
-         drep_mash = "drep_genomes/{sample}/data_tables/Mdb.csv"
     output:
          summary_stats = "summaries/{sample}.xlsx"
 
     shell:
          '''
          python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/generate_summary/extract_stats.py \
-         {input.bin_stats} {input.ref_stats} {input.bin_checkm} {input.drep_mash} {input.drep_mummer} \
+         {input.bin_stats} {input.ref_stats} {input.bin_checkm} {input.ref_checkm} {input.drep_mummer} \
           -o {output.summary_stats}
          '''
