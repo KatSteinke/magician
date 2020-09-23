@@ -75,7 +75,8 @@ class TestDRepStats(unittest.TestCase):
                                                 "test_hiseq_2500_bin_4"],
                                   "ref_coverage": [0.9987903, 0.94825554, 0.96552, np.nan, np.nan],
                                   "query_coverage": [0.95382077, 0.98048997, 0.9568264, np.nan, np.nan],
-                                  "ani": [0.9999186, 0.9999351, 0.9998399, np.nan, np.nan]})
+                                  "ani": [0.9999186, 0.9999351, 0.9998399, np.nan, np.nan],
+                                  "primary_cluster": [1, 2, 3, 4, 5]})
         drep_mummer = Path('test/data/Ndb.csv')
         drep_mash = Path('test/data/Mdb.csv')
         test_drep = summary_stats.get_drep_stats(drep_mummer, drep_mash)

@@ -11,3 +11,5 @@ Escherichia_coli_str_K-12_substr_MG1655_NC_000913_3.fa,Escherichia_coli_str_K-12
 Escherichia_coli_str_K-12_substr_MG1655_NC_000913_3.fa,test_hiseq_2500.bin.9.fa,4441255,711,0.96552,0.9568264,0.9998399,4599858,4641652,0.96552002257461,3
 test_hiseq_2500.bin.9.fa,Escherichia_coli_str_K-12_substr_MG1655_NC_000913_3.fa,4440091,620,0.9565756,0.96526694,0.99986035,4641652,4599858,0.965266971284766,3
 test_hiseq_2500.bin.9.fa,test_hiseq_2500.bin.9.fa,4599738,0,0.9999739,0.9999739,1,4599858,4599858,0.99997391223816,3
+Klebsiella_pneumoniae_subsp_pneumoniae_CP009208_1.fa,Klebsiella_pneumoniae_subsp_pneumoniae_CP009208_1.fa,4599738,0,0.999,0.9999,1,4599738,4599738,0.9999,4
+test_hiseq_2500.bin.4.fa,test_hiseq_2500.bin.4.fa,4641651,0,0.9999,0.99997,1,4641651,4641651,0.999999,5
