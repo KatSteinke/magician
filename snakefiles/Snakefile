@@ -11,7 +11,6 @@ CAMISIM_DIR = "/home/people/katste/hacked-camisim/CAMISIM"
 # TODO get package base dir
 
 # TODO config parameters
-# TODO add rule for summary stats file
 
 rule complete_qc:
     input:
@@ -71,12 +70,14 @@ rule camisim_metafiles:
     output:
         camisim_metafile = 'camisim_configfiles/metadata_{sample}',
         camisim_genomefile = 'camisim_configfiles/id_to_genome_file_{sample}',
-        camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}'
+        camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}',
+        fasta_checkfile = 'camisim_fasta_{sample}/{sample}_checkfile'
     shell:
         '''module load tools
         module load anaconda3/4.4.0
         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/camisim_setup/extract_camisim_data.py \
         {params.samplefile} {params.sample_col}
+        touch camisim_fasta_{params.sample_col}/{params.sample_col}_checkfile
         '''
 
 # Write configuration file for Camisim
@@ -311,10 +312,21 @@ rule sample_stats:
         statswrapper.sh {input.bins}.*.fa > {output.stats_file}
         '''
 
-# TODO: rule for stats from source genomes
 
-#rule reference_stats:
-    #input:
+rule reference_stats:
+    input:
+        refs_checkfile = "camisim_fasta_{sample}/{sample}_checkfile"
+    params:
+        ref_fastas = "camisim_fasta_{sample}"
+    output:
+        ref_stats = "stats/{sample}_refgenomes.tsv"
+    shell:
+        '''
+        module load ngs tools
+        module load openjdk/14
+        module load bbmap/38.35
+        statswrapper.sh {params.ref_fastas}/*.fa > {output.ref_stats}
+        '''
 
 
 # Run checkm on the MAGs to estimate taxonomy and quality
@@ -337,8 +349,25 @@ rule checkm:
         checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {params.dir} {output.dir}
         '''
 
-# TODO rule for source genomes
-
+rule checkm_refs:
+        input:
+            refs_checkfile = "camisim_fasta_{sample}/{sample}_checkfile"
+        params:
+            ref_fastas = "camisim_fasta_{sample}"
+        output:
+                ref_txt="checkm/{sample}_refgenomes.checkm.txt",
+                dir=directory("checkm/{sample}_refgenomes.checkm")
+        threads: 20
+        shell:
+                '''module load ngs tools
+        module unload anaconda3/2.2.0
+                module load anaconda2/4.4.0
+                module load prodigal/2.6.2
+        module load hmmer/3.1b2
+        module load pplacer/1.1.alpha17
+        checkm lineage_wf -f {output.ref_txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa \
+        {params.ref_fastas} {output.dir}
+        '''
 
 # combine original and MAG'ed genomes
 rule pool_bins_and_refs_per_sample:
