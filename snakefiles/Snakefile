@@ -8,6 +8,11 @@ with open("sample_distributions.tsv", "r") as samples_file:
 # Directory containing CAMISIM, change as appropriate
 CAMISIM_DIR = "/home/people/katste/hacked-camisim/CAMISIM"
 
+# TODO get package base dir
+
+# TODO config parameters
+# TODO add rule for summary stats file
+
 rule complete_qc:
     input:
         fastqc = expand("qc/{sample}/simulated_{sample}_r1_fastqc.html", sample=SAMPLES),
@@ -53,6 +58,10 @@ rule all_drep:
 rule clean_all_drep:
     input:
         all_checks = expand("drep_old/{sample}/{sample}_move_check", sample=SAMPLES)
+
+rule all_summaries:
+    input:
+        all_summaries = expand("summaries/{sample}.xlsx", sample=SAMPLES)
 
 # Extract and write metadata
 rule camisim_metafiles:
@@ -302,6 +311,12 @@ rule sample_stats:
         statswrapper.sh {input.bins}.*.fa > {output.stats_file}
         '''
 
+# TODO: rule for stats from source genomes
+
+#rule reference_stats:
+    #input:
+
+
 # Run checkm on the MAGs to estimate taxonomy and quality
 rule checkm:
         input:
@@ -321,6 +336,9 @@ rule checkm:
         module load pplacer/1.1.alpha17
         checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {params.dir} {output.dir}
         '''
+
+# TODO rule for source genomes
+
 
 # combine original and MAG'ed genomes
 rule pool_bins_and_refs_per_sample:
@@ -367,4 +385,21 @@ rule cleanup_drep:
          '''
          mv drep_genomes/{wildcards.sample} drep_old/
          touch drep_old/{wildcards.sample}/{wildcards.sample}_move_check
+         '''
+
+rule summarize_results:
+    input: # TODO implement ref genome checkm
+         bin_stats = "stats/{sample}.tsv",
+         ref_stats = "stats/{sample}_refgenomes.tsv",
+         bin_checkm = "checkm/{sample}.txt",
+         drep_mummer = "drep_genomes/{sample}/data_tables/Ndb.csv",
+         drep_mash = "drep_genomes/{sample}/data_tables/Mdb.csv"
+    output:
+         summary_stats = "summaries/{sample}.xlsx"
+
+    shell:
+         '''
+         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/generate_summary/extract_stats.py \
+         {input.bin_stats} {input.ref_stats} {input.bin_checkm} {input.drep_mash} {input.drep_mummer} \
+          -o {output.summary_stats}
          '''
