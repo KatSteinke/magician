@@ -18,7 +18,6 @@ class TestBBStats(unittest.TestCase):
         test_stats = summary_stats.get_bb_stats(stats_file)
         pd.testing.assert_frame_equal(true_stats, test_stats, check_exact=False, check_less_precise=5)
 
-
     # Test parsing of reference genome names
     def test_get_stats_from_reference(self):
         true_reference = pd.DataFrame({"bin_name": ["Bacillus_cereus_ATCC_14579_NC_004722_1",
@@ -85,3 +84,30 @@ class TestDRepStats(unittest.TestCase):
         drep_mash = Path('test/data/Mdb.csv')
         test_drep = summary_stats.get_drep_stats(drep_mummer, drep_mash)
         pd.testing.assert_frame_equal(test_drep, true_drep, check_exact=False, check_less_precise=5)
+
+
+class TestMergeStats(unittest.TestCase):
+    def test_merge(self):
+        stats = pd.DataFrame({"bin_name": ["sample14_bin_1", "sample14_bin_2"], "scaf_bp": [8667507, 8277261],
+                              "gc_avg": [0.6, 0.5],
+                              "n_scaffolds": [4, 5], "n_contigs": [5, 6], "scaffold_L50": [2, 3],
+                              "scaffold_N50": [1667507, 1277261]})
+        reference = pd.DataFrame({"bin_name": ["Bacillus_cereus_ATCC_14579_NC_004722_1",
+                                               "Bacillus_subtilis_subsp_subtilis_str_168_NC_000964_3"],
+                                  "scaf_bp": [5411809, 4215606],
+                                  "gc_avg": [0.35281, 0.43514],
+                                  "n_scaffolds": [1, 1],
+                                  "n_contigs": [1, 1],
+                                  "scaffold_L50": [1, 1],
+                                  "scaffold_N50": [5411809, 4215606]})
+        true_merged = pd.DataFrame({"bin_name": ["sample14_bin_1", "sample14_bin_2",
+                                                 "Bacillus_cereus_ATCC_14579_NC_004722_1",
+                                                "Bacillus_subtilis_subsp_subtilis_str_168_NC_000964_3"],
+                                    "scaf_bp": [8667507, 8277261, 5411809, 4215606],
+                                    "gc_avg": [0.6, 0.5, 0.35281, 0.43514],
+                                    "n_scaffolds": [4, 5, 1, 1], "n_contigs": [5, 6, 1, 1],
+                                    "scaffold_L50": [2, 3, 1, 1],
+                                    "scaffold_N50": [1667507, 1277261, 5411809, 4215606],
+                                    "genome_type": ["synthetic_MAG", "synthetic_MAG", "reference", "reference"]})
+        test_merged = summary_stats.merge_mag_and_ref_stats(stats, reference)
+        pd.testing.assert_frame_equal(test_merged, true_merged, check_exact=False, check_less_precise=5)

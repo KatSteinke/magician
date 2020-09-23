@@ -37,14 +37,15 @@ def get_checkm_stats(checkm_file: pathlib.Path) -> pd.DataFrame:
     # rename amount of marker genes for clarity
     checkm_stats = checkm_stats.rename(columns={'0': '0_markers', '1': '1_marker', '2': '2_markers', '3': '3_markers',
                                         '4': '4_markers', '5': '5_markers'})
-    # drop all columns where every value is 0
-    #checkm_stats = checkm_stats.loc[:, (checkm_stats != 0).any(axis=0)]
     return checkm_stats
 
 
 def get_bins_and_genomes(mash_file: pathlib.Path) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Get list of genomes and bins from Mdb.csv
-    TODO: improve documentation
+    """Extract list of all reference genomes and bins from dRep's Mash clustering output (Mdb.csv).
+    Arguments:
+        mash_file: Path to Mash clustering file (Mdb.csv)
+    Returns:
+        All unique genomes, and all unique bins, used in the dRep clustering.
     """
     # obtain a list of all genomes and bins by selecting the unique entries for genome_2 from Mdb.csv
     bins_and_genomes = pd.read_csv(mash_file, sep=",")
@@ -68,7 +69,7 @@ def get_drep_stats(mummer_file: pathlib.Path, all_bins: pathlib.Path) -> pd.Data
         Closest bin for each reference with ANI and coverage.
     """
     mummer_anis = pd.read_csv(mummer_file, sep=",")
-    # fix typos?
+    # fix typos
     mummer_anis = mummer_anis.rename(lambda x: x.replace('querry', 'query'), axis="columns")
     # drop all lines that just compare a file with itself
     mummer_anis = mummer_anis.drop(mummer_anis[mummer_anis['query'] == mummer_anis['reference']].index)
@@ -77,15 +78,30 @@ def get_drep_stats(mummer_file: pathlib.Path, all_bins: pathlib.Path) -> pd.Data
     # cut df down to query, reference, ANI, query and reference coverage
     mummer_anis = mummer_anis[['query', 'reference', 'ref_coverage', 'query_coverage', 'ani']].reset_index(drop=True)
     genomes, bins = get_bins_and_genomes(all_bins)
-    # check which genomes are not in 'query' and append these with no closest bin, ....
+    # check which genomes are not in 'query' and append these
     genomes_without_bin = genomes[~genomes['genome2'].isin(mummer_anis['query'])].reset_index(drop=True)
     genomes_without_bin = genomes_without_bin.rename(columns={'genome2': 'query'})
     mummer_anis = mummer_anis.append(genomes_without_bin, ignore_index=True)
-    # check which bins are not in 'reference' and append these ditto
+    # check which bins are not in 'reference' and append these as well
     bins_without_ref = bins[~bins['genome2'].isin(mummer_anis['reference'])].reset_index(drop=True)
     bins_without_ref = bins_without_ref.rename(columns={"genome2": "reference"})
     mummer_anis= mummer_anis.append(bins_without_ref, ignore_index=True)
     return mummer_anis
+
+
+def merge_mag_and_ref_stats(mag_stats: pd.DataFrame, ref_stats: pd.DataFrame) -> pd.DataFrame:
+    """Concatenate two tables with statistics for the synthetic MAGs and the reference genomes,
+    marking which of the two each is.
+     Arguments:
+         mag_stats: table containing statistics of synthetic MAGs
+         ref_stats: table containing statistics of reference genomes
+     Returns:
+         A merged table with sources of genomes marked.
+    """
+    mag_stats['genome_type'] = 'synthetic_MAG'
+    ref_stats['genome_type'] = 'reference'
+    merged_stats = mag_stats.append(ref_stats, ignore_index=True)
+    return merged_stats
 
 
 # final step: write it all to Excel
@@ -105,34 +121,37 @@ def write_summaries(bb_stats: pd.DataFrame, checkm_stats: pd.DataFrame, drep_sta
 
 
 if __name__ == "__main__":
-    # TODO: rework help!!!!
     parser = ArgumentParser(description="Extract genome statistics from CheckM, dRep and bbstats output.")
-    parser.add_argument("stats", action="store", help="BBstats file for bins")
-    parser.add_argument("genome_stats", action="store", help="BBstats file for input genomes")
-    parser.add_argument("checkm", action="store", help="CheckM file")
-    parser.add_argument("drep_mash", action="store", help="dRep Mash file")
-    parser.add_argument("drep_mummer", action="store", help="dRep Mummer file")
-    parser.add_argument("-o", "--outfile", action="store", help="name of excel file to write to",
+    parser.add_argument("stats", action="store", help="Path to BBstats file giving stats of bins")
+    parser.add_argument("genome_stats", action="store", help="Path to BBstats file giving stats of reference genomes")
+    parser.add_argument("checkm", action="store", help="Path to CheckM file for bins")
+    parser.add_argument("genome_checkm", action="store", help="Path to CheckM file for reference genomes")
+    parser.add_argument("drep_mash", action="store", help="Path to dRep Mash file (Mdb.csv)")
+    parser.add_argument("drep_mummer", action="store", help="Path to dRep Mummer file (Ndb.csv)")
+    parser.add_argument("-o", "--outfile", action="store",
+                        help="Name of Excel file to write to (recommended extension: .xlsx) (default: samplestats.xlsx)",
                         default="samplestats.xlsx")
     args = parser.parse_args()
 
+    # get absolute paths
     stats = pathlib.Path(args.stats).resolve()
     original_stats = pathlib.Path(args.genome_stats).resolve()
     checkm = pathlib.Path(args.checkm).resolve()
+    original_checkm = pathlib.Path(args.genome_checkm).resolve()
     mash = pathlib.Path(args.drep_mash).resolve()
     mummer = pathlib.Path(args.drep_mummer).resolve()
     outfile = pathlib.Path(args.outfile).resolve()
 
     # Extract stats for both MAGs and original genomes
     bb_stats = get_bb_stats(stats)
-    # mark the synthetic MAGs as such by adding a column
-    bb_stats['genome_type'] = 'synthetic_MAG'
-    # original genome stats for comparison
     reference_stats = get_bb_stats(original_stats)
-    reference_stats['genome_type'] = 'reference'
-    complete_stats = bb_stats.append(reference_stats, ignore_index=True)
+    complete_stats = merge_mag_and_ref_stats(bb_stats, reference_stats)
 
+    # Get CheckM stats for MAGs and original genomes
     checkm_stats = get_checkm_stats(checkm)
+    reference_checkm = get_checkm_stats(original_checkm)
+    complete_checkm = merge_mag_and_ref_stats(checkm_stats, reference_stats)
+
     drep_stats = get_drep_stats(mummer, mash)
 
     write_summaries(complete_stats, checkm_stats, drep_stats, outfile)
