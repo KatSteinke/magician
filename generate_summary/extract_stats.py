@@ -133,7 +133,6 @@ if __name__ == "__main__":
     original_stats = pathlib.Path(args.genome_stats).resolve()
     checkm = pathlib.Path(args.checkm).resolve()
     original_checkm = pathlib.Path(args.genome_checkm).resolve()
-    mash = pathlib.Path(args.drep_mash).resolve()
     mummer = pathlib.Path(args.drep_mummer).resolve()
     outfile = pathlib.Path(args.outfile).resolve()
 
