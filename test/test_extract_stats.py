@@ -64,8 +64,7 @@ class TestDRepStats(unittest.TestCase):
                                   "ani": [0.9999186, 0.9999351, 0.9998399, np.nan, np.nan],
                                   "primary_cluster": [1, 2, 3, 4, 5]})
         drep_mummer = Path('test/data/Ndb.csv')
-        drep_mash = Path('test/data/Mdb.csv')
-        test_drep = summary_stats.get_drep_stats(drep_mummer, drep_mash)
+        test_drep = summary_stats.get_drep_stats(drep_mummer)
         pd.testing.assert_frame_equal(test_drep, true_drep, check_exact=False, check_less_precise=5)
 
 

@@ -319,7 +319,7 @@ rule reference_stats:
     params:
         ref_fastas = "camisim_fasta_{sample}"
     output:
-        ref_stats = "stats/{sample}_refgenomes.tsv"
+        ref_stats = "ref_stats/{sample}_refgenomes.tsv"
     shell:
         '''
         module load ngs tools
@@ -355,8 +355,8 @@ rule checkm_refs:
         params:
             ref_fastas = "camisim_fasta_{sample}"
         output:
-                ref_txt="checkm/{sample}_refgenomes.checkm.txt",
-                dir=directory("checkm/{sample}_refgenomes.checkm")
+                ref_txt="ref_checkm/{sample}_refgenomes.checkm.txt",
+                dir=directory("ref_checkm/{sample}_refgenomes.checkm")
         threads: 20
         shell:
                 '''module load ngs tools
@@ -419,9 +419,9 @@ rule cleanup_drep:
 rule summarize_results:
     input: # TODO implement ref genome checkm
          bin_stats = "stats/{sample}.tsv",
-         ref_stats = "stats/{sample}_refgenomes.tsv",
+         ref_stats = "ref_stats/{sample}_refgenomes.tsv",
          bin_checkm = "checkm/{sample}.checkm.txt",
-         ref_checkm = "checkm/{sample}_refgenomes.checkm.txt",
+         ref_checkm = "ref_checkm/{sample}_refgenomes.checkm.txt",
          drep_mummer = "drep_genomes/{sample}/data_tables/Ndb.csv",
     output:
          summary_stats = "summaries/{sample}.xlsx"
