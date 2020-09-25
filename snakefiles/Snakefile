@@ -397,7 +397,8 @@ rule drep_sample:
         input:
             check_file = "bins_all/{sample}/{sample}"
         output:
-                test="drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf"
+                test="drep_genomes/{sample}/figures/Secondary_clustering_dendrograms.pdf",
+                mummer_file="drep_genomes/{sample}/data_tables/Ndb.csv"
         params:
             indir="bins_all/{sample}",
 	        outdir="drep_genomes/{sample}"
