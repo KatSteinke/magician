@@ -36,7 +36,7 @@ def get_checkm_stats(checkm_file: pathlib.Path) -> pd.DataFrame:
     checkm_stats = pd.read_csv(checkm_file, sep="\t")
     # rename amount of marker genes for clarity
     checkm_stats = checkm_stats.rename(columns={'0': '0_markers', '1': '1_marker', '2': '2_markers', '3': '3_markers',
-                                        '4': '4_markers', '5': '5_markers'})
+                                        '4': '4_markers', '5': '5_markers', '5+': '5_markers'})
     # unify bin naming for easier comparison
     checkm_stats["Bin Id"] = checkm_stats["Bin Id"].apply(lambda x: x.replace('.', '_'))
     return checkm_stats
