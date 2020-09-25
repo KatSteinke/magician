@@ -108,7 +108,7 @@ rule camisim_configfiles:
          -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -c {params.coverage} --read_sim "art" \
          --read_sim_path "{params.camisim_dir}/tools/art_illumina-2.3.6/art_illumina" \
          --error_profile "{params.camisim_dir}/tools/art_illumina-2.3.6/own_profiles/" \
-         --art_profile_type "own" --profile_basename "testprofile_2019_fc6R" --profile_readlength 150
+         --art_profile_type {params.profile_type} {params.profile_base} {params.profile_readlength}
          '''
 
 # Run CAMISIM on sample, then make one file each with pooled forward & reverse reads
