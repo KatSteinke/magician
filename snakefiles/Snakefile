@@ -1,6 +1,8 @@
 #shell.executable("/bin/bash")
 #shell.prefix("source $HOME/.bashrc; ")
 
+import pathlib
+
 # required: tab-separated file with genbank path to abundance in sample mapping
 with open("sample_distributions.tsv", "r") as samples_file:
     SAMPLES = samples_file.readline().strip().split("\t")[1:] # from the header, take all but the first column's names
@@ -8,7 +10,8 @@ with open("sample_distributions.tsv", "r") as samples_file:
 # Directory containing CAMISIM, change as appropriate
 CAMISIM_DIR = "/home/people/katste/hacked-camisim/CAMISIM"
 
-# TODO get package base dir
+# package base dir
+MAGICIAN_DIR = "/home/projects/cge/data/projects/other/simulatedMAGpipeline/magician"
 
 # TODO config parameters
 
@@ -79,7 +82,7 @@ rule camisim_metafiles:
     shell:
         '''module load tools
         module load anaconda3/4.4.0
-        python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/camisim_setup/extract_camisim_data.py \
+        python3 {MAGICIAN_DIR}/camisim_setup/extract_camisim_data.py \
         {params.samplefile} {params.sample_col}
         touch camisim_fasta_{params.sample_col}/{params.sample_col}_checkfile
         '''
@@ -97,7 +100,7 @@ rule camisim_configfiles:
         camisim_configfile = 'camisim_config_{sample}.ini'
     shell:
          '''module load anaconda3/4.4.0
-         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/camisim_setup/generate_camisim_config.py \
+         python3 {MAGICIAN_DIR}/camisim_setup/generate_camisim_config.py \
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
          -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -c {params.coverage} --read_sim "art" \
          --read_sim_path "{params.camisim_dir}/tools/art_illumina-2.3.6/art_illumina" \
@@ -432,7 +435,7 @@ rule summarize_results:
 
     shell:
          '''
-         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/generate_summary/extract_stats.py \
+         python3 {MAGICIAN_DIR}/generate_summary/extract_stats.py \
          {input.bin_stats} {input.ref_stats} {input.bin_checkm} {input.ref_checkm} {input.drep_mummer} \
           -o {output.summary_stats}
          '''
@@ -444,6 +447,6 @@ rule make_bin_summary:
           bin_stats = "summaries/bin_summary_{sample}.xlsx"
     shell:
          '''
-         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/generate_summary/make_comparison_table.py \
+         python3 {MAGICIAN_DIR}/generate_summary/make_comparison_table.py \
          {input.summary_stats} -o {output.bin_stats}
          '''
