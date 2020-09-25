@@ -60,7 +60,11 @@ rule clean_all_drep:
 
 rule all_summaries:
     input:
-        all_summaries = expand("summaries/{sample}.xlsx", sample=SAMPLES)
+        all_summaries = expand("summaries/general_summary_{sample}.xlsx", sample=SAMPLES)
+
+rule all_bin_summaries:
+    input:
+        all_bin_summaries = expand("summaries/bin_summary_{sample}.xlsx", sample=SAMPLES)
 
 # Extract and write metadata
 rule camisim_metafiles:
@@ -417,18 +421,29 @@ rule cleanup_drep:
          '''
 
 rule summarize_results:
-    input: # TODO implement ref genome checkm
+    input:
          bin_stats = "stats/{sample}.tsv",
          ref_stats = "ref_stats/{sample}_refgenomes.tsv",
          bin_checkm = "checkm/{sample}.checkm.txt",
          ref_checkm = "ref_checkm/{sample}_refgenomes.checkm.txt",
          drep_mummer = "drep_genomes/{sample}/data_tables/Ndb.csv",
     output:
-         summary_stats = "summaries/{sample}.xlsx"
+         summary_stats = "summaries/general_summary_{sample}.xlsx"
 
     shell:
          '''
          python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/generate_summary/extract_stats.py \
          {input.bin_stats} {input.ref_stats} {input.bin_checkm} {input.ref_checkm} {input.drep_mummer} \
           -o {output.summary_stats}
+         '''
+
+rule make_bin_summary:
+    input:
+         summary_stats = "summaries/general_summary_{sample}.xlsx"
+    output:
+          bin_stats = "summaries/bin_summary_{sample}.xlsx"
+    shell:
+         '''
+         python3 /home/projects/cge/data/projects/other/simulatedMAGpipeline/magician/generate_summary/make_comparison_table.py \
+         {input.summary_stats} -o {output.bin_stats}
          '''
