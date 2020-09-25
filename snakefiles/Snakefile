@@ -15,7 +15,7 @@ MAGICIAN_DIR = "/home/projects/cge/data/projects/other/simulatedMAGpipeline/magi
 
 # TODO config parameters
 
-            rule complete_qc:
+rule complete_qc:
     input:
         fastqc = expand("qc/{sample}/simulated_{sample}_r1_fastqc.html", sample=SAMPLES),
         checkm_txt = expand("checkm/{sample}.checkm.txt", sample=SAMPLES),
@@ -35,10 +35,10 @@ rule all_qc:
         input: expand("qc/{sample}/simulated_{sample}_r1_fastqc.html", sample=SAMPLES)
 
 rule all_metaspades:
-	input: expand("metaspades/{sample}/{sample}_scaffolds.fasta", sample=SAMPLES)
+    input: expand("metaspades/{sample}/{sample}_scaffolds.fasta", sample=SAMPLES)
 
 rule make_mags:
-	input: expand("metabat2/{sample}/{sample}.bin", sample=SAMPLES)
+    input: expand("metabat2/{sample}/{sample}.bin", sample=SAMPLES)
 
 rule all_checkm:
     input:
@@ -401,7 +401,7 @@ rule drep_sample:
                 mummer_file="drep_genomes/{sample}/data_tables/Ndb.csv"
         params:
             indir="bins_all/{sample}",
-	        outdir="drep_genomes/{sample}"
+            outdir="drep_genomes/{sample}"
         threads: 40
         #threads: 20
         shell:
