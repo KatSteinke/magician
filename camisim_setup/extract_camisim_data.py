@@ -72,8 +72,8 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
         else:
             # for Fasta file, record ID is cleaned file name
             record_id = re.sub(r"[^A-Za-z0-9_\-]", "", gene_file.stem.replace(" ", "_"))
-            # we cannot extract a taxon, so specify a placeholder
-            taxon_id = f"{otu_count:05d}"
+            # we cannot extract a taxon, so specify a placeholder - bacteria
+            taxon_id = "2"
             # write a copy of the file under the cleaned name, ending in .fa
             fasta_path = Path(fasta_dir,
                               '{}.fa'.format(record_id)).resolve()  # resolves as far as possible, appends the rest
