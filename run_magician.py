@@ -8,7 +8,7 @@ from typing import Optional
 
 
 def run_snakemake(target: str, profile_type: Optional[str]="mbarc", profile_base: Optional[str]="",
-                  readlength: Optional[str]="") -> None:
+                  readlength: Optional[str]="", *snake_params) -> None:
     """Runs a Snakemake command with optional configuration parameters.
     Arguments:
         target:         rule or output file for Snakemake
@@ -34,13 +34,13 @@ def run_snakemake(target: str, profile_type: Optional[str]="mbarc", profile_base
     if not profile_base:
         profile_base = "False"
     if not readlength:
-        readlength = "false"
+        readlength = "False"
 
     # get path for snakefile
     snake_path = pathlib.Path(__file__).resolve().parent / "snakefiles" / "Snakefile"
 
     subprocess.run(["snakemake", target, "-s", snake_path, "--config", 'profile_type="{}"'.format(profile_type),
-                    'profile_name="{}"'.format(profile_base), 'readlength="{}'.format(readlength)])
+                    'profile_name="{}"'.format(profile_base), 'readlength="{}'.format(readlength), *snake_params])
     # construct string
     #snakemake_cmd = 'snakemake {target} -s {snakefile} --config profile_type="{profile_type}" \
     #profile_name="{profile_base}" readlength="{read_length}"'.format(target=target, snakefile=snake_path,
