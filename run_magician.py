@@ -60,11 +60,13 @@ if __name__ == "__main__":
                          required with 'own' error profile""", default="")
     parser.add_argument("--profile_readlength", action="store",
                         help="Read length of custom error profile; required with 'own' error profile", default="")
+    parser.add_argument("--snake_flags", nargs='*', help="Flags to be passed to snakemake")
     args = parser.parse_args()
     target_result = args.target
     profiletype = args.profile_type
     profilename = args.profile_name
     read_length = args.profile_readlength
+    snake_flags = args.snake_flags
 
-    run_snakemake(target_result, profiletype, profilename, read_length)
+    run_snakemake(target_result, profiletype, profilename, read_length, snake_flags)
 
