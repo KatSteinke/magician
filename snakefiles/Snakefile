@@ -12,7 +12,7 @@ CAMISIM_DIR = "/home/people/katste/hacked-camisim/CAMISIM"
 
 # package base dir
 #MAGICIAN_DIR = "/home/projects/cge/data/projects/other/simulatedMAGpipeline/magician"
-MAGICIAN_DIR = pathlib.Path(__file__).parents[1]
+MAGICIAN_DIR = pathlib.Path(workflow.basedir).parent
 
 # TODO config parameters
 
