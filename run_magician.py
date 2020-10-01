@@ -39,7 +39,7 @@ def run_snakemake(target: str, profile_type: Optional[str]="mbarc", profile_base
     snake_path = pathlib.Path(__file__).resolve().parent / "snakefiles" / "Snakefile"
 
     subprocess.run(["snakemake", target, "-s", snake_path, "--config", 'profile_type="{}"'.format(profile_type),
-                    'profile_name="{}"'.format(profile_base), 'readlength="{}'.format(readlength), *snake_params])
+                    'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength), *snake_params])
     # construct string
     #snakemake_cmd = 'snakemake {target} -s {snakefile} --config profile_type="{profile_type}" \
     #profile_name="{profile_base}" readlength="{read_length}"'.format(target=target, snakefile=snake_path,
