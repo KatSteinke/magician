@@ -1,4 +1,5 @@
 import re
+import shutil
 
 from argparse import ArgumentParser
 from pathlib import Path
@@ -20,6 +21,7 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
         a directory with a fasta file with the sequence of each gbk in the table with nonzero abundance, and
         a tab-separated file listing the genome ID and path of each fasta file.
     """
+    # TODO: make testable! Split out record parsing?
     samples_table = pd.read_csv(samples_file, sep="\t", index_col=False)
     # check for any genomes with an abundance of 0 in the current sample, remove these
     samples_table = samples_table.loc[samples_table[sample_col] != 0]
@@ -38,29 +40,49 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
     if not Path(fasta_dir).is_dir():
         Path(fasta_dir).mkdir()
     # for each input file:
-    for genbank in records:
-        record = SeqIO.read(genbank, "genbank")  # TODO: this only works with no contigs - adapt for contigs later!
-        #     extract ID: source and identifier
-        # clean up source separately: remove all characters that aren't alphanumeric, - or _
-        sanitized_source = re.sub(r"[^A-Za-z0-9_-]", "", record.annotations["source"].replace(" ", "_"))
-        record_id = "{}_{}".format(sanitized_source, record.id.replace(".", "_"))
-        record_ids.append(record_id)
-        #     extract taxonomic ID
+    for gene_file in records:
         taxon_id = ""
-        with open(genbank, "r") as infile:
+        file_type = None
+        # identify whether it's a fasta or genbank file
+        with open(gene_file, "r") as infile:
             line = infile.readline()
-            while line and not taxon_id:
-                if "taxon:" in line:
-                    taxon_parts = line.strip().split(":")
-                    taxon_id = taxon_parts[1].replace('"', "")
-                line = infile.readline()
+            if line.startswith("LOCUS"):
+                file_type = "genbank"
+                # for genbanks, extract taxonomic ID here
+                while line and not taxon_id:
+                    if "taxon:" in line:
+                        taxon_parts = line.strip().split(":")
+                        taxon_id = taxon_parts[1].replace('"', "")
+                    line = infile.readline()
+            elif line.startswith(">"):
+                file_type = "fasta"
+            else:
+                raise ValueError("Incorrect file type, only Genbank and Fasta files can be used")
+        # for Genbank files, extract files
+        if file_type == "genbank":
+            record = SeqIO.read(gene_file, "genbank")  # TODO: this only works with no contigs - adapt for contigs later!
+            #     extract ID: source and identifier
+            # clean up source separately: remove all characters that aren't alphanumeric, - or _
+            sanitized_source = re.sub(r"[^A-Za-z0-9_\-]", "", record.annotations["source"].replace(" ", "_"))
+            record_id = "{}_{}".format(sanitized_source, record.id.replace(".", "_"))
+            # create and save FASTA file
+            fasta_path = Path(fasta_dir,
+                              '{}.fa'.format(record_id)).resolve()  # resolves as far as possible, appends the rest
+            SeqIO.convert(gene_file, "genbank", fasta_path, "fasta")
+        else:
+            # for Fasta file, record ID is cleaned file name
+            record_id = re.sub(r"[^A-Za-z0-9_\-]", "", gene_file.stem.replace(" ", "_"))
+            # we cannot extract a taxon, so specify a placeholder
+            taxon_id = f"{otu_count:05d}"
+            # write a copy of the file under the cleaned name, ending in .fa
+            fasta_path = Path(fasta_dir,
+                              '{}.fa'.format(record_id)).resolve()  # resolves as far as possible, appends the rest
+            shutil.copyfile(gene_file, fasta_path)
+        record_ids.append(record_id)
         # create and append metadata line
         metadata.append("{}\t{}\t{}\tknown_strain".format(record_id, otu_count, taxon_id))
         otu_count += 1
-        # create and save FASTA file
-        fasta_path = Path(fasta_dir,
-                          '{}.fa'.format(record_id)).resolve()  # resolves as far as possible, appends the rest
-        SeqIO.convert(genbank, "genbank", fasta_path, "fasta")
+
         # id to file line
         id_to_genome.append("{}\t{}".format(record_id, fasta_path))
 
