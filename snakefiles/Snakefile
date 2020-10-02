@@ -103,7 +103,8 @@ rule camisim_configfiles:
     output:
         camisim_configfile = 'camisim_config_{sample}.ini'
     shell:
-         '''module load anaconda3/4.4.0
+         '''module load ngs tools
+         module load anaconda3/4.4.0
          python3 {MAGICIAN_DIR}/camisim_setup/generate_camisim_config.py \
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
          -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -c {params.coverage} --read_sim "art" \
@@ -120,7 +121,8 @@ rule run_camisim:
         concat_results_r1 = 'camisim_out/{sample}/simulated_{sample}_r1.gz',
         concat_results_r2 = 'camisim_out/{sample}/simulated_{sample}_r2.gz'
     shell:
-        '''module load anaconda2/4.4.0
+        '''module load ngs tools
+        module load anaconda2/4.4.0
         python2 {CAMISIM_DIR}/metagenomesimulation.py {input.camisim_configfile}
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
@@ -439,7 +441,8 @@ rule summarize_results:
          summary_stats = "summaries/general_summary_{sample}.xlsx"
 
     shell:
-         '''
+         '''module load tools
+        module load anaconda3/4.4.0
          python3 {MAGICIAN_DIR}/generate_summary/extract_stats.py \
          {input.bin_stats} {input.ref_stats} {input.bin_checkm} {input.ref_checkm} {input.drep_mummer} \
           -o {output.summary_stats}
@@ -451,7 +454,8 @@ rule make_bin_summary:
     output:
           bin_stats = "summaries/bin_summary_{sample}.xlsx"
     shell:
-         '''
+         '''module load tools
+        module load anaconda3/4.4.0
          python3 {MAGICIAN_DIR}/generate_summary/make_comparison_table.py \
          {input.summary_stats} -o {output.bin_stats}
          '''
