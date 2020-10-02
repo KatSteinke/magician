@@ -19,8 +19,7 @@ class TestMakeTable(unittest.TestCase):
                                    "contig_difference": [4, 5, 4, np.nan],
                                    "length_difference": [3255698, 4061655, 3255698, np.nan],
                                    "gc_difference": [0.24719, 0.06486, 0.24719, np.nan],
-                                   "unique_markers_difference": [-15, -27, -157, np.nan],
-                                   "all_markers_difference": [-15, 0, -136, np.nan]})
+                                   "completeness_difference": [-1.72, 0, -6.39, np.nan]})
         test_table = make_table.create_comparison_table(test_file)
         print(test_table.head())
         pd.testing.assert_frame_equal(test_table, true_table)

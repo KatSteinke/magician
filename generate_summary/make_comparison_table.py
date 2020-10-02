@@ -43,17 +43,12 @@ def create_comparison_table(base_table: pathlib.Path) -> pd.DataFrame:
     summary_checkm = pd.merge(pd.merge(summary_table, checkm_stats, left_on="bin_name", right_on="Bin Id", how="left"),
                               checkm_stats, how="left", left_on="closest_genome", right_on="Bin Id",
                               suffixes=("_bin", "_ref"))
-    summary_checkm["unique_markers_difference"] = summary_checkm["1_marker_bin"] - summary_checkm["1_marker_ref"]
-    # to see how many marker genes were found at all: everything that wasn't *not* found (simplify?)
-    summary_checkm["all_markers_difference"] = (summary_checkm["# markers_bin"] - summary_checkm["0_markers_bin"]) \
-                                               - (summary_checkm["# markers_ref"] - summary_checkm["0_markers_ref"])
-
+    summary_checkm["completeness_difference"] = summary_checkm["Completeness_bin"] - summary_checkm["Completeness_ref"]
     summary_table = summary_bb[["bin_name_bin", "closest_genome", "scaffold_difference", "contig_difference",
                                 "length_difference", "gc_difference"]]
     summary_table = summary_table.rename(columns={"bin_name_bin": "bin_name"})
     summary_table = pd.merge(summary_table, summary_checkm[["Bin Id_bin",
-                                                            "unique_markers_difference",
-                                                            "all_markers_difference"]],
+                                                            "completeness_difference"]],
                              how="left", left_on="bin_name", right_on="Bin Id_bin").drop("Bin Id_bin", axis=1)
     return summary_table
 
