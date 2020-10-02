@@ -42,7 +42,6 @@ def get_checkm_stats(checkm_file: pathlib.Path) -> pd.DataFrame:
     return checkm_stats
 
 
-
 def get_drep_stats(mummer_file: pathlib.Path) -> pd.DataFrame:
     """Extract ANI from comma-separated file produced by dRep's Mummer-based ANI step.
     Arguments:
@@ -100,22 +99,6 @@ def merge_mag_and_ref_stats(mag_stats: pd.DataFrame, ref_stats: pd.DataFrame) ->
     return merged_stats
 
 
-# final step: write it all to Excel
-def write_summaries(bb_stats: pd.DataFrame, checkm_stats: pd.DataFrame, drep_stats: pd.DataFrame,
-                    summary_file: str):
-    """Collect all summary files in an Excel file.
-    Arguments:
-        bb_stats: Summary of bb_stats output
-        checkm_stats: Summary of checkm output
-        drep_stats: Summary of drep output
-        summary_file: location to write summary file to
-    """
-    with pd.ExcelWriter(summary_file) as writer:
-        bb_stats.to_excel(writer, sheet_name="BB_stats")
-        checkm_stats.to_excel(writer, sheet_name="CheckM")
-        drep_stats.to_excel(writer, sheet_name="dRep")
-
-
 if __name__ == "__main__":
     parser = ArgumentParser(description="Extract genome statistics from CheckM, dRep and bbstats output.")
     parser.add_argument("stats", action="store", help="Path to BBstats file giving stats of bins")
@@ -160,6 +143,36 @@ if __name__ == "__main__":
     reference_checkm = get_checkm_stats(original_checkm)
     complete_checkm = merge_mag_and_ref_stats(checkm_stats, reference_checkm)
 
+    explanations = pd.DataFrame.from_dict({"genome_type": ["General information: type of genome (synthetic MAG or source genome)"],
+                                           "BB_stats: bin_name": ["Name of MetaBAT-generated bin or genome"],
+                                           "BB_stats: scaf_bp": ["Basepairs in scaffold(s)"],
+                                           "BB_stats: gc_avg": ["Average GC content for bin/genome"],
+                                           "BB_stats: n_scaffolds": ["Amount of scaffolds"],
+                                           "BB_stats: n_contigs": ["Amount of contigs"],
+                                           "BB_stats: scaffold_L50": ["scaffold L50: smallest number of scaffolds that cover half (or more) of the genome together"],
+                                           "BB_stats: scaffold_N50": ["scaffold N50: length of the shortest scaffold from the smallest set of scaffolds that covers half (or more) of the genome."],
+                                           "BB_stats: primary_cluster": ["dRep cluster based on estimate of average nucleotide identity; included here for ease of comparison."],
+                                           "BB_stats: NOTE": ["In the raw BBstats output, N50 and L50 are reversed; here, the commonly used definitions are used instead."],
+                                           "CheckM: Bin Id": ["Name of MetaBAT-generated bin or genome"],
+                                           "CheckM: Marker lineage": ["Taxon for which specific marker genes could be found"],
+                                           "CheckM: # genomes": ["Amount of genomes used to determine marker genes"],
+                                           "CheckM: # markers": ["Amount of marker genes (single-copy genes occurring in more than 97 percent of the taxon's genomes) for the given taxon"],
+                                           "CheckM: # marker sets": ["Amount of marker gene sets; marker genes are grouped into sets by combining all pairs of collocated marker genes - closer than 5 kb in 95 percent of genomes - which share a gene"],
+                                           "CheckM: x_markers": ["Amount of markers occurring x times in the genome"],
+                                           "CheckM: completeness": ["Completeness of genome, estimated by number of marker genes that are present"],
+                                           "CheckM: contamination": ["Contamination of genome, estimated by number of marker genes occurring more than once"],
+                                           "CheckM: Strain heterogeneity": ["Contamination specifically arising from closely related strains, identified via the amount of marker gene duplicates above a threshold of amino acid identity"],
+                                           "dRep: query": ["Name of source genome"],
+                                           "dRep: reference": ["Name of closest bin"],
+                                           "dRep: ref_coverage": ["Percent of bin covered by source genome"],
+                                           "dRep: query_coverage": ["Percent of source genome covered by bin"],
+                                           "dRep: ani": ["Average nucleotide identity between source genome and bin, calculated by Nucmer alignment"],
+                                           "dRep: primary_cluster": ["Cluster containing source genome and bin, determined by Mash-estimated ANI; source and bin need to have ANI of at least 90 percent to be in one cluster"],
+                                           "dRep: NOTE": ["If a row contains only a source genome or only a bin, no bin/source genome had an estimated ANI of at least 90 percent."]},
+                                          orient="index")
 
-
-    write_summaries(complete_stats, complete_checkm, drep_stats, outfile)
+    with pd.ExcelWriter(outfile) as writer:
+        complete_stats.to_excel(writer, sheet_name="BB_stats")
+        complete_checkm.to_excel(writer, sheet_name="CheckM")
+        drep_stats.to_excel(writer, sheet_name="dRep")
+        explanations.to_excel(writer, sheet_name="explanations")

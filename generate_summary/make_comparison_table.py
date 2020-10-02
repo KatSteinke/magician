@@ -52,7 +52,6 @@ def create_comparison_table(base_table: pathlib.Path) -> pd.DataFrame:
                              how="left", left_on="bin_name", right_on="Bin Id_bin").drop("Bin Id_bin", axis=1)
     return summary_table
 
-# TODO: this also needs an explanation sheet at some point
 
 
 if __name__ == "__main__":
@@ -67,5 +66,20 @@ if __name__ == "__main__":
 
     summary = create_comparison_table(infile)
 
+    explanations = pd.DataFrame.from_dict({"bin_name": ["Name of MetaBAT-assigned bin"],
+                                           "closest_genome": ["Source genome with highest ANI for bin found by dRep"],
+                                           "scaffold_difference":
+                                               ["Difference of the amount of scaffolds in the bin and the closest genome (bin - reference)"],
+                                           "contig_difference":
+                                               ["Difference of the amount of contigs in the bin and the closest genome (bin - reference)"],
+                                           "length_difference":
+                                               ["Length difference in base pairs between bin and closest genome (bin - reference)"],
+                                           "gc_difference":
+                                               ["Difference in GC content between bin and closest genome (bin - reference)"],
+                                           "completeness_difference":
+                                               ["Difference in completeness between bin and closest genome as calculated by CheckM (bin - reference). Note that completeness in bin and reference may be calculated with different marker genes; when in doubt, check the CheckM summary."]
+                                           }, orient='index')
+
     with pd.ExcelWriter(outfile) as outfile_writer:
         summary.to_excel(outfile_writer, sheet_name="summary")
+        explanations.to_excel(outfile_writer, sheet_name="explanations")
