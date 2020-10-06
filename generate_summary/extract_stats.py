@@ -7,6 +7,7 @@ import pandas as pd
 
 
 # TODO: style pass!
+# TODO: fix for large dRep clusters!
 def get_bb_stats(stats_file: pathlib.Path) -> pd.DataFrame:
     """Extract bin name, contig and scaffold counts, size, GC content, N50 and L50
     from a tab-separated file produced by bbtools's statswrapper.sh
@@ -65,8 +66,9 @@ def get_drep_stats(mummer_file: pathlib.Path) -> pd.DataFrame:
     # drop all self-comparisons initially
     mummer_anis = mummer_anis_original.drop(mummer_anis_original[mummer_anis_original['query']
                                                                  == mummer_anis_original['reference']].index)
-    # still leaves two rows per primary cluster - select only these where bins are in reference
-    mummer_anis = mummer_anis[mummer_anis['reference'].str.contains('_bin_', regex=False)]
+    # still leaves multiple rows per primary cluster - select only these where bins are in reference
+    mummer_anis = mummer_anis[mummer_anis['reference'].str.contains('_bin_', regex=False)][~mummer_anis['query'].str.contains('_bin_',
+                                                                                                                              regex=False)]
     # re-add all primary clusters only consisting of one member (singletons)
     mummer_anis = mummer_anis.append(mummer_anis_original.groupby("primary_cluster").filter(lambda x: len(x) == 1),
                                      ignore_index=True)
@@ -123,16 +125,11 @@ if __name__ == "__main__":
     # Extract stats for both MAGs and original genomes
     bb_stats = get_bb_stats(stats)
     reference_stats = get_bb_stats(original_stats)
-    # Identify dRep primary clusters for each
-    bb_stats = pd.merge(bb_stats, drep_stats, how="left", left_on="bin_name", right_on="reference")[['bin_name',
-                                                                                                     'scaf_bp',
-                                                                                                     'gc_avg',
-                                                                                                     'n_scaffolds',
-                                                                                                     'n_contigs',
-                                                                                                     'scaffold_L50',
-                                                                                                     'scaffold_N50',
-                                                                                                     'primary_cluster']]
-    reference_stats = pd.merge(reference_stats, drep_stats, how="left", left_on="bin_name",
+    # Identify dRep primary clusters for each, selecting each bin only once (given a bin can match multiple genomes)
+    bb_stats = pd.merge(bb_stats, drep_stats.drop_duplicates(subset=["reference"]), how="left", left_on="bin_name",
+                        right_on="reference")[['bin_name', 'scaf_bp', 'gc_avg', 'n_scaffolds', 'n_contigs',
+                                               'scaffold_L50', 'scaffold_N50', 'primary_cluster']]
+    reference_stats = pd.merge(reference_stats, drep_stats.drop_duplicates(subset=["query"]), how="left", left_on="bin_name",
                                right_on="query")[['bin_name', 'scaf_bp', 'gc_avg', 'n_scaffolds', 'n_contigs',
                                                   'scaffold_L50', 'scaffold_N50', 'primary_cluster']]
 
