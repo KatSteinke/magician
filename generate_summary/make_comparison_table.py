@@ -27,11 +27,12 @@ def create_comparison_table(base_table: pathlib.Path) -> pd.DataFrame:
     # then left join (leaving all entries from the summary table intact) summary table on filtered drep_stats
     summary_table = pd.merge(summary_table, drep_stats[drep_stats.groupby("reference")['ani'].transform(max)
                                                        == drep_stats['ani']],
-                            left_on='bin_name', right_on='reference', how='left')[["bin_name", "query"]]
-    summary_table = summary_table.rename(columns={"query": "closest_genome"})
+                            left_on='bin_name', right_on='reference', how='left')[["bin_name", "query", "ref_coverage",
+                                                                                   "query_coverage", "ani"]]
+    summary_table = summary_table.rename(columns={"query": "closest_genome", "ref_coverage": "bin_coverage",
+                                                  "query_coverage": "source_coverage"})
     # scaffold etc. difference
     # create temp columns - one with scaffold stats, one with source genome stats
-    # TODO: this is ugly as sin, FIX IT
     summary_bb = pd.merge(summary_table, bb_stats, how="left", on="bin_name")
     summary_bb = pd.merge(summary_bb, bb_stats, left_on="closest_genome", right_on="bin_name", how="left",
                           suffixes=('_bin', '_ref'))
@@ -44,8 +45,8 @@ def create_comparison_table(base_table: pathlib.Path) -> pd.DataFrame:
                               checkm_stats, how="left", left_on="closest_genome", right_on="Bin Id",
                               suffixes=("_bin", "_ref"))
     summary_checkm["completeness_difference"] = summary_checkm["Completeness_bin"] - summary_checkm["Completeness_ref"]
-    summary_table = summary_bb[["bin_name_bin", "closest_genome", "scaffold_difference", "contig_difference",
-                                "length_difference", "gc_difference"]]
+    summary_table = summary_bb[["bin_name_bin", "closest_genome", "ani", "bin_coverage", "source_coverage",
+                                "scaffold_difference", "contig_difference", "length_difference", "gc_difference"]]
     summary_table = summary_table.rename(columns={"bin_name_bin": "bin_name"})
     summary_table = pd.merge(summary_table, summary_checkm[["Bin Id_bin",
                                                             "completeness_difference"]],
@@ -68,6 +69,8 @@ if __name__ == "__main__":
 
     explanations = pd.DataFrame.from_dict({"bin_name": ["Name of MetaBAT-assigned bin"],
                                            "closest_genome": ["Source genome with highest ANI for bin found by dRep"],
+                                           "bin_coverage": ["Percent of bin covered by closest genome"],
+                                           "source_coverage": ["Percent of closest genome covered by bin"],
                                            "scaffold_difference":
                                                ["Difference of the amount of scaffolds in the bin and the closest genome (bin - reference)"],
                                            "contig_difference":
