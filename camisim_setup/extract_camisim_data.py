@@ -42,17 +42,21 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
     # for each input file:
     for gene_file in records:
         taxon_id = ""
+        strain_name = ""
         file_type = None
         # identify whether it's a fasta or genbank file
         with open(gene_file, "r") as infile:
             line = infile.readline()
             if line.startswith("LOCUS"):
                 file_type = "genbank"
-                # for genbanks, extract taxonomic ID here
-                while line and not taxon_id:
+                # for genbanks, extract taxonomic ID and strain name here
+                while line and not (taxon_id and strain_name):
                     if "taxon:" in line:
                         taxon_parts = line.strip().split(":")
                         taxon_id = taxon_parts[1].replace('"', "")
+                    if "/strain" in line:
+                        strain_parts = line.strip().split("=")
+                        strain_name = strain_parts[1].replace('"', "")
                     line = infile.readline()
             elif line.startswith(">"):
                 file_type = "fasta"
@@ -62,8 +66,13 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
         if file_type == "genbank":
             record = SeqIO.read(gene_file, "genbank")  # TODO: this only works with no contigs - adapt for contigs later!
             #     extract ID: source and identifier
-            # clean up source separately: remove all characters that aren't alphanumeric, - or _
-            sanitized_source = re.sub(r"[^A-Za-z0-9_\-]", "", record.annotations["source"].replace(" ", "_"))
+            # add strain identifier to source if it's not already there
+            if strain_name in record.annotations["source"]:
+                strain_source = record.annotations["source"]
+            else:
+                strain_source = record.annotations["source"] + " " + strain_name
+            # clean up source: remove all characters that aren't alphanumeric, - or _
+            sanitized_source = re.sub(r"[^A-Za-z0-9_\-]", "", strain_source.replace(" ", "_"))
             record_id = "{}_{}".format(sanitized_source, record.id.replace(".", "_"))
             # create and save FASTA file
             fasta_path = Path(fasta_dir,
