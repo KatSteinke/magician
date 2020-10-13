@@ -54,7 +54,7 @@ def get_camisim_per_sample(samples_file: Path, sample_col: str):
                     if "taxon:" in line:
                         taxon_parts = line.strip().split(":")
                         taxon_id = taxon_parts[1].replace('"', "")
-                    if "/strain" in line:
+                    if "/strain" in line or "/isolate" in line:
                         strain_parts = line.strip().split("=")
                         strain_name = strain_parts[1].replace('"', "")
                     line = infile.readline()
