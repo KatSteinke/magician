@@ -16,7 +16,7 @@ MAGICIAN_DIR = pathlib.Path(workflow.basedir).parent
 # if config entries do not exist, set defaults
 if not "profile_type" in config:
     config["profile_type"] = "mbarc"
-if not "profile name" in config:
+if not "profile_name" in config:
     config["profile_name"] = "False"
 if not "readlength" in config:
     config["readlength"] = "False"
@@ -360,9 +360,9 @@ rule checkm:
         threads: 20
         shell:
                 '''module load ngs tools
-        module unload anaconda3/2.2.0
-                module load anaconda2/4.4.0
-                module load prodigal/2.6.2
+        module unload anaconda3/4.4.0
+        module load anaconda2/4.4.0
+        module load prodigal/2.6.2
         module load hmmer/3.1b2
         module load pplacer/1.1.alpha17
         checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {params.dir} {output.dir}
@@ -379,9 +379,9 @@ rule checkm_refs:
         threads: 20
         shell:
                 '''module load ngs tools
-        module unload anaconda3/2.2.0
-                module load anaconda2/4.4.0
-                module load prodigal/2.6.2
+        module unload anaconda3/4.4.0
+        module load anaconda2/4.4.0
+        module load prodigal/2.6.2
         module load hmmer/3.1b2
         module load pplacer/1.1.alpha17
         checkm lineage_wf -f {output.ref_txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa \
