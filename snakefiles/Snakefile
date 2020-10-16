@@ -201,7 +201,7 @@ rule asm_metaspades:
         shell: # specify phred offset if needed - assumed to be 33 for wgsim reads w/o error profile
                 '''module load ngs tools
                 module load anaconda3/4.4.0
-                module load spades/3.13.0
+                module load spades/3.14.0
                 mkdir -p "time/metaspades"
                 /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} \
                 -o {params.dir} -k 27,47,67,87,107,127 --memory 120 2> {log.err} 1> {log.out}
