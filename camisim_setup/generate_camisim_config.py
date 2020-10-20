@@ -251,9 +251,10 @@ if __name__ == "__main__":
                         default="camisim_out")
     parser.add_argument('-a', '--abundance_file', action="store",
                         help="Optional: file giving relative abundance of genomes", default="")
-    parser.add_argument('-c', '--coverage', action="store",
-                        help="Desired average coverage for the sample (default: 1X)",
-                        default=1)
+    #parser.add_argument('-c', '--coverage', action="store",
+    #                    help="Desired average coverage for the sample (default: 1X)",
+    #                    default=1)
+    parser.add_argument('-s', '--sample_size', action="store", help="Total size of sample in gigabasepairs (default: 1)", default=1)
     parser.add_argument('--read_sim', action="store", help="Read simulator to use",
                         choices=["art", "wgsim", "nanosim", "pbsim"],
                         default="art")
@@ -333,15 +334,17 @@ if __name__ == "__main__":
     out_dir = args.out_dir
     read_sim = args.read_sim
     sample_type = args.sample_type
-    coverage = float(args.coverage)
+    #coverage = float(args.coverage)
+    sample_size = float(args.sample_size)
     art_profile_type = args.art_profile_type
 
     #calculate amount of genomes and sample size
     genomes = get_file_length(genome_file)
-    size_total = get_sample_size(genome_file, coverage)
+    genome_size = 
+    #size_total = get_sample_size(genome_file, coverage)
 
     config_str = generate_config_file(camisim_dir, metadata, genome_file, out_dir, read_sim, read_sim_path, sample_type,
-                                      genomes, size_total, error_profile, abundance_file, art_profile_type,
+                                      genomes, sample_size, error_profile, abundance_file, art_profile_type,
                                       profile_basename, profile_readlength)
     with open(filename, "w") as outfile:
         outfile.write(config_str)
