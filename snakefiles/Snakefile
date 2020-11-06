@@ -102,7 +102,7 @@ rule camisim_configfiles:
     params:
         camisim_dir = CAMISIM_DIR,
         #coverage = 20,
-        samplesize = 1.5,
+        samplesize = 2.5,
         profile_type = config["profile_type"],
         profile_base = "" if config["profile_name"] == "False" else "--profile_basename '{}'".format(config["profile_name"]),
         profile_readlength = "" if config["readlength"] == "False" else "--profile_readlength {}".format(config["readlength"])
@@ -301,7 +301,7 @@ rule metabat2:
         mkdir -p logs/metabat2
         mkdir -p time/metabat2
         /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} \
-        -o {params.out} --unbinned 2> {log.err} 1> {log.out}
+        -o {params.out} --unbinned --seed 1 2> {log.err} 1> {log.out}
         '''
 
 # Use prodigal to find ORFs in the metagenome and save genes and proteins
