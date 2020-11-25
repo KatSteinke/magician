@@ -50,7 +50,8 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
                          amount_genomes: int, sample_size: float, error_profiles: Optional[Path] = "",
                          abundance_file: Optional[Path] = "", profile_name: Optional[str] = "mbarc",
                          own_error_basename: Optional[str] = "",
-                         own_error_readlength: Optional[int] = "") -> str:
+                         own_error_readlength: Optional[int] = "",
+                         insert_size: Optional[int] = 270) -> str:
     """Generate a config file for CAMISIM and write it to a specified filename.
     Arguments:
         camisim_dir:            Path to the directory containing CAMISIM
@@ -68,10 +69,14 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
                                 "hi", "mi", "hi150", "own" (requires giving own profile & lengths)
         own_error_basename:     name of error profile files, without "[1/2].txt", if using own
         own_error_readlength:   length of reads to simulate with own error profile
+        insert_size:            mean insert size (default: 270 bp)
     Returns:
         A CAMISIM config file with the chosen parameters.
     """
     # sanity checks
+    # do we get a proper insert size?
+    if insert_size <= 0:
+        raise ValueError("Mean insert size needs to be above 0.")
     # is the read simulator a valid choice?
     if not readsim in {"art", "wgsim", "nanosim", "pbsim"}:
         raise ValueError("{} is not a valid read simulator. Valid options are art, wgsim, nanosim, pbsim.".format(readsim))
@@ -165,7 +170,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     profile_read_length={readlength}
     
     #paired end read, insert size (not applicable for nanosim)
-    fragments_size_mean=270
+    fragments_size_mean={insertsize}
     fragment_size_standard_deviation=27
     
     # Only relevant if not from_profile is run:
@@ -234,7 +239,8 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
         readlength=own_error_readlength,
         amount=amount_genomes,
         samplesize=sample_size,
-        dist_file=abundance_file
+        dist_file=abundance_file,
+        insertsize=insert_size
     )
     config_string = dedent(config_string)
     return config_string
@@ -254,7 +260,10 @@ if __name__ == "__main__":
     #parser.add_argument('-c', '--coverage', action="store",
     #                    help="Desired average coverage for the sample (default: 1X)",
     #                    default=1)
-    parser.add_argument('-s', '--sample_size', action="store", help="Total size of sample in gigabasepairs (default: 1)", default=1)
+    parser.add_argument('-s', '--sample_size', action="store",
+                        help="Total size of sample in gigabasepairs (default: 1)", default=1)
+    parser.add_argument('--insert_size', action="store", help="Mean insert size in bp (default: 270)",
+                        default=270, type=int)
     parser.add_argument('--read_sim', action="store", help="Read simulator to use",
                         choices=["art", "wgsim", "nanosim", "pbsim"],
                         default="art")
@@ -271,7 +280,6 @@ if __name__ == "__main__":
     parser.add_argument("--art_profile_type", action="store", default="mbarc",
                         choices=['mbarc', 'hi', 'mi', 'hi150', 'own'],
                         help="Type of ART error profile: mbarc, hi, mi, hi150, own (default: mbarc)")
-    # TODO: how to handle custom profile arguments?
     parser.add_argument("--profile_basename", action="store",
                         help="""Base name of custom error profile, if given (name of files without '[1/2].txt');\
                          required with 'own' error profile""")
@@ -282,6 +290,12 @@ if __name__ == "__main__":
 
     # establish location of CAMISIM dir
     camisim_dir = Path(args.camisim_dir).resolve()
+
+    # sanity check insert size
+    if args.insert_size <= 0:
+        parser.error("Mean insert size needs to be larger than 0 bp.")
+    else:
+        insert_size = args.insert_size
 
     # check if no errors is specified without using wgsim - fail early if so
     if args.errorfree:
@@ -344,6 +358,6 @@ if __name__ == "__main__":
 
     config_str = generate_config_file(camisim_dir, metadata, genome_file, out_dir, read_sim, read_sim_path, sample_type,
                                       genomes, sample_size, error_profile, abundance_file, art_profile_type,
-                                      profile_basename, profile_readlength)
+                                      profile_basename, profile_readlength, insert_size)
     with open(filename, "w") as outfile:
         outfile.write(config_str)
