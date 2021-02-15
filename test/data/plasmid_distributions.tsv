@@ -1,0 +1,4 @@
+genome	seq_type	plasmidfree	plasmids
+test/data/NC_000913.3.fa	chromosome	1	1
+test/data/NC_000964.3.fa	chromosome	1	1
+test/data/NZ_LT598664.1.gbk	plasmid	0	1

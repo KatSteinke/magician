@@ -3,9 +3,11 @@
 
 import pathlib
 
+import snakefiles.snakemake_helpers as helpers # TODO: does this even work?
+
 # required: tab-separated file with genbank path to abundance in sample mapping
-with open("sample_distributions.tsv", "r") as samples_file:
-    SAMPLES = samples_file.readline().strip().split("\t")[1:] # from the header, take all but the first column's names
+with open("sample_distributions.tsv", "r") as samples_file: # TODO fix/make variable
+    SAMPLES = samples_file.readline().strip().split("\t")[2:] # from the header, take all but the first two column names
 
 # Directory containing CAMISIM, change as appropriate
 CAMISIM_DIR = "/home/people/katste/hacked-camisim/CAMISIM"
@@ -22,6 +24,7 @@ if not "readlength" in config:
     config["readlength"] = "False"
 if not "insert_size" in config:
     config["insert_size"] = 270
+
 
 rule complete_qc:
     input:
@@ -290,7 +293,9 @@ rule metabat2:
         "metabat2/{sample}/{sample}.bin"
     params:
         out="metabat2/{sample}/{sample}.bin",
-        time="time/metabat2/{sample}.time"
+        time="time/metabat2/{sample}.time",
+        binsize = lambda wildcards: 5000 if helpers.check_plasmids(pathlib.Path("sample_distributions.tsv"),
+            wildcards.sample) else 200000
     log:
                 out="logs/metabat2/{sample}.out",
                 err="logs/metabat2/{sample}.err"
@@ -306,7 +311,7 @@ rule metabat2:
         mkdir -p logs/metabat2
         mkdir -p time/metabat2
         /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} \
-        -o {params.out} --unbinned --seed 1 2> {log.err} 1> {log.out}
+        -o {params.out} --minClsSize {params.binsize} --unbinned --seed 1 2> {log.err} 1> {log.out}
         '''
 
 # Use prodigal to find ORFs in the metagenome and save genes and proteins
