@@ -5,9 +5,10 @@ import subprocess
 from argparse import ArgumentParser
 from typing import Optional
 
+#import subprocrunner
 
 def run_snakemake(target: str, profile_type: Optional[str] = "mbarc", profile_base: Optional[str] = "",
-                  readlength: Optional[str] = "", insert_size: Optional[int] = 270,
+                  readlength: Optional[str] = "", insert_size: Optional[int] = 270, cluster_cmd: Optional[str] = "",
                   *snake_params) -> None:
     """Runs a Snakemake command with optional configuration parameters.
     Arguments:
@@ -16,13 +17,14 @@ def run_snakemake(target: str, profile_type: Optional[str] = "mbarc", profile_ba
         profile_base:   path to own ART error profile for CAMISIM
         readlength:     read length used for own ART error profile
         insert_size:    mean insert size to use for simulation (default: 270)
+        cluster_cmd:    command to use for cluster mode
     """
     # TODO: make testable
     # check all elements of the command
     for input_param in [target, profile_type, profile_base, readlength, insert_size]:
-        bad_chars = re.search(r"""[^a-zA-Z0-9"'./_\- ]""", input_param)
+        bad_chars = re.search(r"""[^a-zA-Z0-9"'./_\- ]""", str(input_param))
         if bad_chars:
-            raise ValueError("Invalid character(s) in one of the parameters: {}.".format(bad_chars.group(0)))
+            raise ValueError("Arguments can only consist of alphanumeric characters, quote marks, ., /, _, - and space.")
 
     # sanity check parameters
     if insert_size <= 0:
@@ -43,16 +45,23 @@ def run_snakemake(target: str, profile_type: Optional[str] = "mbarc", profile_ba
     # get path for snakefile
     snake_path = pathlib.Path(__file__).resolve().parent / "snakefiles" / "Snakefile"
 
-    subprocess.run(["snakemake", target, "-s", snake_path, "--config", 'profile_type="{}"'.format(profile_type),
-                    'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength),
-                    'insert_size={}'.format(insert_size), *snake_params])
-    # construct string
-    #snakemake_cmd = 'snakemake {target} -s {snakefile} --config profile_type="{profile_type}" \
-    #profile_name="{profile_base}" readlength="{read_length}"'.format(target=target, snakefile=snake_path,
-    #                                                                 profile_type=profile_type,
-    #                                                                 profile_base=profile_base,
-    #                                                                 read_length=readlength)
+    # get basic command
+    snakemake_cmd = ["snakemake", target, "-s", snake_path, "--config", 'profile_type="{}"'.format(profile_type),
+     'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength),
+     'insert_size={}'.format(insert_size), *snake_params]
 
+    # if cluster mode is specified:
+    if cluster_cmd:
+        snakemake_cmd.insert(4, "--cluster")
+        snakemake_cmd.insert(5, '"{}"'.format(cluster_cmd))
+
+    subprocess.run(snakemake_cmd)
+    #test_runner = subprocrunner.SubprocessRunner(snakemake_cmd, dry_run=True)
+    #print("command: {}".format(test_runner.command))
+    #subprocess.run(["snakemake", target, "-s", snake_path, "--config", 'profile_type="{}"'.format(profile_type),
+    #                'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength),
+    #                'insert_size={}'.format(insert_size), *snake_params])
+    
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Run MAGICIAN to create a specified file.")
@@ -67,6 +76,9 @@ if __name__ == "__main__":
                         help="Read length of custom error profile; required with 'own' error profile", default="")
     parser.add_argument("--insert_size", action="store", type=int, default=270,
                         help="Mean insert size for read simulation (default: 270)")
+    parser.add_argument("--cluster", action="store", default="",
+                        help="""For use with snakemake's cluster mode; supply command for submitting jobs as you \
+                        would with snakemake.""")
     parser.add_argument("--snake_flags", nargs='*', help="Flags to be passed to snakemake, enclosed in quotes")
     args = parser.parse_args()
     target_result = args.target
@@ -74,7 +86,8 @@ if __name__ == "__main__":
     profilename = args.profile_name
     read_length = args.profile_readlength
     insert_size = args.insert_size
+    cluster_cmd = args.cluster
     snake_flags = args.snake_flags[0].split()
 
-    run_snakemake(target_result, profiletype, profilename, read_length, insert_size, *snake_flags)
+    run_snakemake(target_result, profiletype, profilename, read_length, insert_size, cluster_cmd, *snake_flags)
 

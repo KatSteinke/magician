@@ -6,7 +6,7 @@ import run_magician
 class TestRunMagician(unittest.TestCase):
     def test_bad_file_name(self):
         bad_result = "test_ä.txt"
-        with self.assertRaisesRegex(ValueError, r"Invalid character\(s\) in one of the parameters: ä."):
+        with self.assertRaisesRegex(ValueError, r"""Arguments can only consist of alphanumeric characters, quote marks, \., \/, \_, \- and space."""):
             run_magician.run_snakemake(bad_result)
 
     def test_missing_profile_info(self):
