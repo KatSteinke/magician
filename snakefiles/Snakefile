@@ -294,7 +294,7 @@ rule metabat2:
     params:
         out="metabat2/{sample}/{sample}.bin",
         time="time/metabat2/{sample}.time",
-        binsize = lambda wildcards: 5000 if helpers.check_plasmids(pathlib.Path("sample_distributions.tsv"),
+        binsize = lambda wildcards: 10000 if helpers.check_plasmids(pathlib.Path("sample_distributions.tsv"),
             wildcards.sample) else 200000
     log:
                 out="logs/metabat2/{sample}.out",
