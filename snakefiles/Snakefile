@@ -3,7 +3,7 @@
 
 import pathlib
 
-import snakefiles.snakemake_helpers as helpers # TODO: does this even work?
+import snakemake_helpers as helpers # TODO: does this even work?
 
 # required: tab-separated file with genbank path to abundance in sample mapping
 with open("sample_distributions.tsv", "r") as samples_file: # TODO fix/make variable

@@ -53,7 +53,7 @@ def run_snakemake(target: str, profile_type: Optional[str] = "mbarc", profile_ba
     # if cluster mode is specified:
     if cluster_cmd:
         snakemake_cmd.insert(4, "--cluster")
-        snakemake_cmd.insert(5, '"{}"'.format(cluster_cmd))
+        snakemake_cmd.insert(5, cluster_cmd)
 
     subprocess.run(snakemake_cmd)
     #test_runner = subprocrunner.SubprocessRunner(snakemake_cmd, dry_run=True)
