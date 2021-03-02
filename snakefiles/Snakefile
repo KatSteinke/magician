@@ -3,14 +3,15 @@
 
 import pathlib
 
-import snakemake_helpers as helpers # TODO: does this even work?
+import snakemake_helpers as helpers
 
 # required: tab-separated file with genbank path to abundance in sample mapping
 with open("sample_distributions.tsv", "r") as samples_file: # TODO fix/make variable
     SAMPLES = samples_file.readline().strip().split("\t")[2:] # from the header, take all but the first two column names
 
-# Directory containing CAMISIM, change as appropriate
-CAMISIM_DIR = "/home/people/katste/hacked-camisim/CAMISIM"
+# Directory containing CAMISIM, change as appropriate - make variable again?
+#CAMISIM_DIR = "/home/people/katste/hacked-camisim/CAMISIM"
+CAMISIM_DIR = "/CAMISIM"
 
 # package base dir
 MAGICIAN_DIR = pathlib.Path(workflow.basedir).parent
@@ -91,8 +92,7 @@ rule camisim_metafiles:
         camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}',
         fasta_checkfile = 'camisim_fasta_{sample}/{sample}_checkfile'
     shell:
-        '''module load tools
-        module load anaconda3/4.4.0
+        '''
         python3 {MAGICIAN_DIR}/camisim_setup/extract_camisim_data.py \
         {params.samplefile} {params.sample_col}
         touch camisim_fasta_{params.sample_col}/{params.sample_col}_checkfile
@@ -109,21 +109,22 @@ rule camisim_configfiles:
         #coverage = 20,
         samplesize = 2.5,
         profile_type = config["profile_type"],
-        profile_base = "" if config["profile_name"] == "False" else "--profile_basename '{}'".format(config["profile_name"]),
+        profile_base = "" if config["profile_name"] == "False" else "--profile_basename '{}'".format(pathlib.Path(config["profile_name"]).stem),
         profile_readlength = "" if config["readlength"] == "False" else "--profile_readlength {}".format(config["readlength"]),
-        insert_size = config["insert_size"]
+        insert_size = config["insert_size"],
+        errorprofile_dir = str(pathlib.Path(CAMISIM_DIR) / "tools" / "art_illumina-2.3.6" / "profiles") if config["profile_name"] == "False" \
+            else pathlib.Path(config["profile_name"]).parent
     output:
         camisim_configfile = 'camisim_config_{sample}.ini'
     shell:
-         '''module load ngs tools
-         module load anaconda3/4.4.0
+         '''
          python3 {MAGICIAN_DIR}/camisim_setup/generate_camisim_config.py \
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
          -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -s {params.samplesize} \
          --insert_size {params.insert_size} \
          --read_sim "art" \
          --read_sim_path "{params.camisim_dir}/tools/art_illumina-2.3.6/art_illumina" \
-         --error_profile "{params.camisim_dir}/tools/art_illumina-2.3.6/own_profiles/" \
+         --error_profile "{params.errorprofile_dir}" \
          --art_profile_type {params.profile_type} {params.profile_base} {params.profile_readlength}
          '''
 
@@ -134,9 +135,9 @@ rule run_camisim:
     output:
         concat_results_r1 = 'camisim_out/{sample}/simulated_{sample}_r1.gz',
         concat_results_r2 = 'camisim_out/{sample}/simulated_{sample}_r2.gz'
+    singularity: "/home/kat/Documents/Uni/fall20/paper/singularity-imgs/camisim-py2-test.sif"
     shell:
-        '''module load ngs tools
-        module load anaconda2/4.4.0
+        '''
         python2 {CAMISIM_DIR}/metagenomesimulation.py {input.camisim_configfile}
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
@@ -164,9 +165,9 @@ rule fastqc:
     output:
           qc_r1 = 'qc/{sample}/simulated_{sample}_r1_fastqc.html',
           qc_r2 = 'qc/{sample}/simulated_{sample}_r2_fastqc.html'
+    singularity: "docker://biocontainers/fastqc"
     shell:
-         '''module load tools ngs
-         module load perl openjdk/14 fastqc/0.11.8
+         '''
          fastqc -o qc/{wildcards.sample} {input.reads_r1} {input.reads_r2}
          '''
 # ### ADAPTED FROM CODE BY PATRICK MUNK ###
@@ -179,11 +180,11 @@ rule trim_bbduk:
         R1="trimReads/{sample}/simulated_{sample}_r1.trim.fq.gz",
         R2="trimReads/{sample}/simulated_{sample}_r2.trim.fq.gz",
         RS="trimReads/{sample}/simulated_{sample}_S.trim.fq.gz"
-    threads: 8
+    #threads: 8
+    threads: 5
+    singularity: "docker://staphb/bbtools"
     shell: # specify quality score offset if needed - wgsim offset assumed to be 33
-        '''module load ngs tools
-        module load java/1.8.0
-        module load bbmap/36.49
+        '''
         bbduk2.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t \
         minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} rref=adapters.fa
         '''
@@ -206,11 +207,11 @@ rule asm_metaspades:
             err="logs/asm_metaspades/{sample}.err"
         benchmark:
             "benchmarks/{sample}.metaspades.bm.txt"
-        threads: 20
+        #threads: 20
+        threads: 7
+        singularity: "docker://staphb/spades:3.14.0"
         shell: # specify phred offset if needed - assumed to be 33 for wgsim reads w/o error profile
-                '''module load ngs tools
-                module load anaconda3/4.4.0
-                module load spades/3.14.0
+                '''
                 mkdir -p "time/metaspades"
                 /usr/bin/time -v -o {params.time} metaspades.py -t {threads} -1 {input.R1} -2 {input.R2} -s {input.RS} \
                 -o {params.dir} -k 27,47,67,87,107,127 --memory 120 2> {log.err} 1> {log.out}
@@ -227,7 +228,8 @@ rule cleanup_metaspades:
         junk="metaspades/{sample}/contigs.fasta"
     output:
         cleanup="metaspades/{sample}/cleanup.txt"
-    threads: 8
+    #threads: 8
+    threads: 5
     shell:
                 '''
         rm -f {input.dir}/contigs.paths
@@ -249,10 +251,9 @@ rule filter_scafs:
     params:
         pfx="{sample}" 
     threads: 1
+    singularity: "docker://staphb/bbtools"
     shell:
-        '''module load ngs tools
-        module load jdk/14
-        module load bbmap/36.49
+        '''
         rename.sh ow=t fastawrap=60 minscaf=1000 prefix={params.pfx} addprefix=t in={input.asm} out={output.asm}
         '''
 
@@ -270,14 +271,12 @@ rule map_bbmap:
         out="logs/map_bbmap/{sample}.out",
         err="logs/map_bbmap/{sample}.err"
 
-    threads: 20
+    #threads: 20
+    threads: 7
+    # TODO: create bbmap/samtools/metabat container! Based on either bbmap or samtools container
+    singularity: "/home/kat/Documents/Uni/fall20/paper/singularity-imgs/metabat-test.sif"
     shell:
-            '''module load ngs tools
-            module load perl
-            module load java/1.8.0
-            module load bbmap/36.49
-            module load samtools/1.10
-            module load metabat/2.12.1
+            '''
             mkdir -p logs/map_bbmap
             bbmap.sh in={input.R1} in2={input.R2} minid=0.90 threads={threads} ref={input.fa} outm={output.outsam} overwrite=t nodisk=t 2> {log.err} 1> {log.out}
             samtools view -bSh1 {output.outsam} | samtools sort -m 20G -@ 3 > {output.outbam}
@@ -301,13 +300,12 @@ rule metabat2:
                 err="logs/metabat2/{sample}.err"
     benchmark:
                 "benchmarks/{sample}.metabat2.bm.txt"
+    singularity: "/home/kat/Documents/Uni/fall20/paper/singularity-imgs/metabat-test.sif"
 
-    threads: 10
+    #threads: 10
+    threads: 7
     shell:
         '''
-        module load ngs tools
-        module load perl
-        module load metabat/2.12.1
         mkdir -p logs/metabat2
         mkdir -p time/metabat2
         /usr/bin/time -v -o {params.time} metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} \
@@ -334,11 +332,9 @@ rule sample_stats:
         bins = "metabat2/{sample}/{sample}.bin"
     output:
         stats_file = "stats/{sample}.tsv"
+    singularity: "docker://staphb/bbtools"
     shell:
         '''
-        module load ngs tools
-        module load openjdk/14
-        module load bbmap/38.35
         statswrapper.sh {input.bins}.*.fa > {output.stats_file}
         '''
 
@@ -350,11 +346,9 @@ rule reference_stats:
         ref_fastas = "camisim_fasta_{sample}"
     output:
         ref_stats = "ref_stats/{sample}_refgenomes.tsv"
+    singularity: "docker://staphb/bbtools"
     shell:
         '''
-        module load ngs tools
-        module load openjdk/14
-        module load bbmap/38.35
         statswrapper.sh {params.ref_fastas}/*.fa > {output.ref_stats}
         '''
 
@@ -368,14 +362,11 @@ rule checkm:
         output:
                 txt="checkm/{sample}.checkm.txt",
                 dir=directory("checkm/{sample}.checkm")
-        threads: 20
+        #threads: 20
+        threads: 7
+        singularity: "docker://abremges/checkm-genome"
         shell:
-                '''module load ngs tools
-        module unload anaconda3/4.4.0
-        module load anaconda2/4.4.0
-        module load prodigal/2.6.2
-        module load hmmer/3.1b2
-        module load pplacer/1.1.alpha17
+                '''
         checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {params.dir} {output.dir}
         '''
 
@@ -387,17 +378,21 @@ rule checkm_refs:
         output:
                 ref_txt="ref_checkm/{sample}_refgenomes.checkm.txt",
                 dir=directory("ref_checkm/{sample}_refgenomes.checkm")
-        threads: 20
+        #threads: 20
+        threads: 7
+        singularity: "docker://abremges/checkm-genome" # TODO check if this works?
         shell:
-                '''module load ngs tools
-        module unload anaconda3/4.4.0
-        module load anaconda2/4.4.0
-        module load prodigal/2.6.2
-        module load hmmer/3.1b2
-        module load pplacer/1.1.alpha17
+                '''
         checkm lineage_wf -f {output.ref_txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa \
         {params.ref_fastas} {output.dir}
         '''
+        # old commands
+        #module load ngs tools
+        #module unload anaconda3/4.4.0
+        #module load anaconda2/4.4.0
+        #module load prodigal/2.6.2
+        #module load hmmer/3.1b2
+        #module load pplacer/1.1.alpha17
 
 # combine original and MAG'ed genomes
 rule pool_bins_and_refs_per_sample:
@@ -422,17 +417,20 @@ rule drep_sample:
         params:
             indir="bins_all/{sample}",
             outdir="drep_genomes/{sample}"
-        threads: 40
+        #threads: 40
         #threads: 20
+        threads: 7
+        singularity: "docker://sstevens/drep-genome-nocheckm"
         shell:
                 '''
-                module load tools ngs
-                module load anaconda3/4.4.0
-                module load mash/2.2
-                module load mummer/3.23
+                
                 dRep compare {params.outdir} -p {threads} -ms 1000 -g {params.indir}/*fa
                 '''
-
+        # old code:
+        #module load tools ngs
+                #module load anaconda3/4.4.0
+                #module load mash/2.2
+                #module load mummer/3.23
 # ### END ADAPTED CODE ###
 
 # Clean up old dRep results
@@ -459,8 +457,7 @@ rule summarize_results:
          summary_stats = "summaries/general_summary_{sample}.xlsx"
 
     shell:
-         '''module load tools
-        module load anaconda3/4.4.0
+         '''
          python3 {MAGICIAN_DIR}/generate_summary/extract_stats.py \
          {input.bin_stats} {input.ref_stats} {input.bin_checkm} {input.ref_checkm} {input.drep_mummer} \
           -o {output.summary_stats}
@@ -472,8 +469,7 @@ rule make_bin_summary:
     output:
           bin_stats = "summaries/bin_summary_{sample}.xlsx"
     shell:
-         '''module load tools
-        module load anaconda3/4.4.0
+         '''
          python3 {MAGICIAN_DIR}/generate_summary/make_comparison_table.py \
          {input.summary_stats} -o {output.bin_stats}
          '''
