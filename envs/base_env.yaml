@@ -1,0 +1,13 @@
+name: magician_base
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython
+  - numpy>=1.22.2
+  - openpyxl
+  - pandas
+  - pigz
+  - snakemake==6.15.0
+  - singularity

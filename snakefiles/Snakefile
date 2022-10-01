@@ -93,8 +93,6 @@ rule camisim_metafiles:
         fasta_checkfile = 'camisim_fasta_{sample}/{sample}_checkfile'
     shell:
         '''
-         module load ngs tools
-         module load anaconda3/4.4.0
         python3 {MAGICIAN_DIR}/camisim_setup/extract_camisim_data.py \
         {params.samplefile} {params.sample_col}
         touch camisim_fasta_{params.sample_col}/{params.sample_col}_checkfile
@@ -120,8 +118,6 @@ rule camisim_configfiles:
         camisim_configfile = 'camisim_config_{sample}.ini'
     shell:
          '''
-         module load ngs tools
-         module load anaconda3/4.4.0
          python3 {MAGICIAN_DIR}/camisim_setup/generate_camisim_config.py \
          {params.camisim_dir} {input.camisim_metafile} {input.camisim_genomefile} -f {output.camisim_configfile} \
          -o "camisim_out/{wildcards.sample}" -a {input.camisim_abundance} -s {params.samplesize} \
@@ -147,9 +143,6 @@ rule run_camisim:
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
-        #module load ngs tools
-        #module unload anaconda3/4.4.0
-        #module load anaconda2/4.4.0
 
 # Move CAMISIM result files, clear out genome locations and metadata
 rule cleanup_camisim:
@@ -286,7 +279,6 @@ rule map_bbmap:
     threads: 20
     #threads: 7
     # TODO: create bbmap/samtools/metabat container! Based on either bbmap or samtools container
-    #singularity: "/home/kat/Documents/Uni/fall20/paper/singularity-imgs/metabat-test.sif"
     #singularity: "singularity-containers/metabat-old-bbtools.sif"
     singularity: "shub://KatSteinke/magician-singularity-containers:bbmap_from_metabat"
     shell:
@@ -297,12 +289,7 @@ rule map_bbmap:
             samtools view -bSh1 {output.outsam} | samtools sort -m 20G -@ 3 > {output.outbam}
             jgi_summarize_bam_contig_depths {output.outbam} --outputDepth {output.dep}
             '''
-    #module load ngs tools
-    #module load perl
-    #module load java/1.8.0
-    #module load bbmap/36.49
-    #module load samtools/1.10
-    #module load metabat/2.12.1
+
 
 # Use MetaBat2 to bin scaffolds from sample
 rule metabat2:
@@ -334,11 +321,6 @@ rule metabat2:
         metabat -t {threads} -v -m 1500 --saveCls -i {input.asm} -a {input.dep} \
         -o {params.out} --minClsSize {params.binsize} --unbinned --seed 1 2> {log.err} 1> {log.out}
         '''
-    # module load ngs tools
-    #module load perl
-    #module load metabat/2.12.1
-    #mkdir -p time/metabat2
-    #/usr/bin/time -v -o {params.time} 
 
 # Use prodigal to find ORFs in the metagenome and save genes and proteins
 rule findgenes_prodigal:
@@ -421,13 +403,6 @@ rule checkm_refs:
         checkm lineage_wf -f {output.ref_txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa \
         {params.ref_fastas} {output.dir}
         '''
-        # old commands
-        #module load ngs tools
-        #module unload anaconda3/4.4.0
-        #module load anaconda2/4.4.0
-        #module load prodigal/2.6.2
-        #module load hmmer/3.1b2
-        #module load pplacer/1.1.alpha17
 
 # combine original and MAG'ed genomes
 rule pool_bins_and_refs_per_sample:
@@ -453,21 +428,12 @@ rule drep_sample:
             indir="bins_all/{sample}",
             outdir="drep_genomes/{sample}"
         threads: 40
-        #threads: 20
-        #threads: 7
-        #singularity: "docker://sstevens/drep-genome-nocheckm"
-        #singularity: "singularity-containers/drep_test.sif"
         singularity: "shub://KatSteinke/magician-singularity-containers:drep"
         shell:
                 '''
                 
                 dRep compare {params.outdir} -p {threads} -ms 1000 -g {params.indir}/*fa
                 '''
-        # old code:
-        #module load tools ngs
-                #module load anaconda3/4.4.0
-                #module load mash/2.2
-                #module load mummer/3.23
 # ### END ADAPTED CODE ###
 
 # Clean up old dRep results
@@ -495,8 +461,6 @@ rule summarize_results:
 
     shell:
          '''
-         module load tools
-         module load anaconda3/4.4.0
          python3 {MAGICIAN_DIR}/generate_summary/extract_stats.py \
          {input.bin_stats} {input.ref_stats} {input.bin_checkm} {input.ref_checkm} {input.drep_mummer} \
           -o {output.summary_stats}
@@ -509,8 +473,6 @@ rule make_bin_summary:
           bin_stats = "summaries/bin_summary_{sample}.xlsx"
     shell:
          '''
-         module load tools
-         module load anaconda3/4.4.0
          python3 {MAGICIAN_DIR}/generate_summary/make_comparison_table.py \
          {input.summary_stats} -o {output.bin_stats}
          '''
