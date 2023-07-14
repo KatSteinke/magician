@@ -1,4 +1,4 @@
-name: cami_env
+name: cami_env_py2
 channels:
   - bioconda
   - conda-forge
