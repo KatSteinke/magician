@@ -1,0 +1,11 @@
+name: cami_env
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=2.7
+  - numpy=1.13.0
+  - matplotlib=2.0.2
+  - biopython=1.69.0
+  - biom-format=2.1.6
