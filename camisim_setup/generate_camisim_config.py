@@ -146,7 +146,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     
     # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
     # file path to executable
-    samtools={camidir}/tools/samtools-1.3/samtools
+    samtools=/home/kma/.conda/envs/cami_snakemake_2/bin/samtools
     
     # file path to read simulation executable
     readsim={simpath}

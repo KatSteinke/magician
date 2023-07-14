@@ -138,11 +138,12 @@ rule run_camisim:
         concat_results_r1 = 'camisim_out/{sample}/simulated_{sample}_r1.gz',
         concat_results_r2 = 'camisim_out/{sample}/simulated_{sample}_r2.gz'
      #singularity: "singularity-containers/camisim-py2-test.sif" # testing
-    singularity: "docker://cami/camisim:latest"
+    #singularity: "docker://cami/camisim:latest"
     #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "cami_python2_new_env.yml"
+    conda: "cami_snakemake_2"
     shell:
         '''
-        python3 metagenomesimulation.py {input.camisim_configfile}
+        python2 {CAMISIM_DIR}/metagenomesimulation.py {input.camisim_configfile}
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
