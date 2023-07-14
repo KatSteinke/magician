@@ -5,3 +5,4 @@ channels:
   - defaults
 dependencies:
   - bbmap=36.32
+  - metabat2
