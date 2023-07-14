@@ -6,3 +6,4 @@ channels:
 dependencies:
   - bbmap=36.32
   - metabat2
+  - samtools=1.10
