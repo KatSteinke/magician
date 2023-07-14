@@ -1,0 +1,10 @@
+name: magician_base
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - biopython
+  - openpyxl
+  - pandas
+  - snakemake
