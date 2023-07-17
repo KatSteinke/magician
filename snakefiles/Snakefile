@@ -398,7 +398,8 @@ rule checkm:
         input:
                 check_file = "metabat2/{sample}/{sample}.bin"
         params:
-            dir="metabat2/{sample}"
+            dir="metabat2/{sample}",
+            pplacer_threads=1  # pplacer is a memory hungry beast
         output:
                 txt="checkm/{sample}.checkm.txt",
                 dir=directory("checkm/{sample}.checkm")
@@ -410,7 +411,7 @@ rule checkm:
         shell:
                 '''
                
-        checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {threads} --tab_table -x fa {params.dir} {output.dir}
+        checkm lineage_wf -f {output.txt} -t {threads} --pplacer_threads {params.pplacer_threads} --tab_table -x fa {params.dir} {output.dir}
         '''
 
 rule checkm_refs:
