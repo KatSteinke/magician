@@ -196,7 +196,7 @@ rule trim_bbduk:
     shell: # specify quality score offset if needed - wgsim offset assumed to be 33
         '''
         bbduk.sh -Xmx12g in={input.R1} in2={input.R2} out={output.R1} out2={output.R2} outs={output.RS} overwrite=t \
-        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} ref=adapters.fa ktrim=f
+        minlen=50 qtrim=r trimq=20 k=19 mink=11 threads={threads} ref=adapters ktrim=n
         '''
 
 
