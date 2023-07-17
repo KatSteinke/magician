@@ -333,7 +333,7 @@ if __name__ == "__main__":
     # get samtools path from file - TODO: move to a function?
     samtools_file = args.samtools_path
     with open(samtools_file, "r") as read_samtools:
-        path_to_samtools = pathlib.Path(read_samtools.readline().strip())
+        path_to_samtools = Path(read_samtools.readline().strip())
     if not path_to_samtools.exists():
         raise FileNotFoundError("Samtools not found at specified location.")
     # set remaining parameters
