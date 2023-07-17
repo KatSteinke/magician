@@ -99,12 +99,23 @@ rule camisim_metafiles:
         touch camisim_fasta_{params.sample_col}/{params.sample_col}_checkfile
         '''
 
+rule get_samtools_path:
+    output:
+        samtools_path = temp("samtools_path.txt")
+    conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "cami_python2_new_env.yml"
+    shell:
+        """
+        which samtools > {output.samtools_path}
+        """
+
+
 # Write configuration file for Camisim
 rule camisim_configfiles:
     input:
         camisim_metafile = 'camisim_configfiles/metadata_{sample}',
         camisim_genomefile = 'camisim_configfiles/id_to_genome_file_{sample}',
-        camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}'
+        camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}',
+        samtools_path = "samtools_path.txt"
     params:
         camisim_dir = CAMISIM_DIR,
         #coverage = 20,
@@ -126,6 +137,7 @@ rule camisim_configfiles:
          --insert_size {params.insert_size} \
          --read_sim "art" \
          --read_sim_path "{params.camisim_dir}/tools/art_illumina-2.3.6/art_illumina" \
+         --samtools_path "{input.samtools_path}" \
          --error_profile "{params.errorprofile_dir}" \
          --art_profile_type {params.profile_type} {params.profile_base} {params.profile_readlength}
          '''
