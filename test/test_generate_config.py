@@ -148,6 +148,7 @@ class TestGenerateConfig(unittest.TestCase):
         id_to_genome = Path("test/data/id_to_genome_file")
         output_dir = "camisim_out"
         readsim = "art"
+        samtools_path = "path/to/samtools"
         readsim_dir = camisim_dir / "tools" / "art_illumina-2.3.6" / "art_illumina"
         sample = "replicates"
         amount_genomes = 2
@@ -192,7 +193,7 @@ class TestGenerateConfig(unittest.TestCase):
         
         # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
         # file path to executable
-        samtools=/home/people/katste/camisim/CAMISIM/tools/samtools-1.3/samtools
+        samtools=path/to/samtools
         
         # file path to read simulation executable
         readsim=/home/people/katste/camisim/CAMISIM/tools/art_illumina-2.3.6/art_illumina
@@ -316,7 +317,7 @@ class TestGenerateConfig(unittest.TestCase):
         
         # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
         # file path to executable
-        samtools=/home/people/katste/camisim/CAMISIM/tools/samtools-1.3/samtools
+        samtools=path/to/samtools
         
         # file path to read simulation executable
         readsim=/home/people/katste/camisim/CAMISIM/tools/art_illumina-2.3.6/art_illumina
@@ -446,7 +447,7 @@ class TestGenerateConfig(unittest.TestCase):
 
                 # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
                 # file path to executable
-                samtools=/home/people/katste/camisim/CAMISIM/tools/samtools-1.3/samtools
+                samtools=path/to/samtools
 
                 # file path to read simulation executable
                 readsim=/home/people/katste/camisim/CAMISIM/tools/art_illumina-2.3.6/art_illumina
