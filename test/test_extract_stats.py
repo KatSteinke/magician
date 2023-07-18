@@ -16,7 +16,7 @@ class TestBBStats(unittest.TestCase):
                                     "scaffold_N50": [1667507, 1277261]})
         stats_file = Path('test/data/fake_bb.csv')
         test_stats = summary_stats.get_bb_stats(stats_file)
-        pd.testing.assert_frame_equal(true_stats, test_stats, check_exact=False, check_less_precise=5)
+        pd.testing.assert_frame_equal(true_stats, test_stats, check_exact=False)
 
     # Test parsing of reference genome names
     def test_get_stats_from_reference(self):
@@ -30,7 +30,7 @@ class TestBBStats(unittest.TestCase):
                                        "scaffold_N50": [5411809, 4215606]})
         reference_file = Path('test/data/fake_refgenomes.csv')
         test_reference = summary_stats.get_bb_stats(reference_file)
-        pd.testing.assert_frame_equal(true_reference, test_reference, check_exact=False, check_less_precise=5)
+        pd.testing.assert_frame_equal(true_reference, test_reference, check_exact=False)
 
 
 class TestCheckMStats(unittest.TestCase):
@@ -44,7 +44,7 @@ class TestCheckMStats(unittest.TestCase):
                                 "Strain heterogeneity": [38.46, 42.86]})
         checkm_file = Path('test/data/fake_checkm.txt')
         test_checkm = summary_stats.get_checkm_stats(checkm_file)
-        pd.testing.assert_frame_equal(true_checkm, test_checkm, check_exact=False, check_less_precise=5)
+        pd.testing.assert_frame_equal(true_checkm, test_checkm, check_exact=False)
 
 
 class TestDRepStats(unittest.TestCase):
@@ -65,7 +65,7 @@ class TestDRepStats(unittest.TestCase):
                                   "primary_cluster": [1, 2, 3, 4, 5]})
         drep_mummer = Path('test/data/Ndb.csv')
         test_drep = summary_stats.get_drep_stats(drep_mummer)
-        pd.testing.assert_frame_equal(test_drep, true_drep, check_exact=False, check_less_precise=5)
+        pd.testing.assert_frame_equal(test_drep, true_drep, check_exact=False)
 
 
 class TestMergeStats(unittest.TestCase):
@@ -92,4 +92,4 @@ class TestMergeStats(unittest.TestCase):
                                     "scaffold_N50": [1667507, 1277261, 5411809, 4215606],
                                     "genome_type": ["synthetic_MAG", "synthetic_MAG", "reference", "reference"]})
         test_merged = summary_stats.merge_mag_and_ref_stats(stats, reference)
-        pd.testing.assert_frame_equal(test_merged, true_merged, check_exact=False, check_less_precise=5)
+        pd.testing.assert_frame_equal(test_merged, true_merged, check_exact=False)
