@@ -70,8 +70,9 @@ def get_drep_stats(mummer_file: pathlib.Path) -> pd.DataFrame:
     mummer_anis = mummer_anis[mummer_anis['reference'].str.contains('_bin_', regex=False)][~mummer_anis['query'].str.contains('_bin_',
                                                                                                                               regex=False)]
     # re-add all primary clusters only consisting of one member (singletons)
-    mummer_anis = mummer_anis.append(mummer_anis_original.groupby("primary_cluster").filter(lambda x: len(x) == 1),
+    mummer_anis = pd.concat([mummer_anis, mummer_anis_original.groupby("primary_cluster").filter(lambda x: len(x) == 1)],
                                      ignore_index=True)
+    print(mummer_anis)
     mummer_anis = mummer_anis[['query', 'reference', 'ref_coverage', 'query_coverage', 'ani',
                                'primary_cluster']].reset_index(drop=True)
     # self-comparisons are meaningless for our table, replace by NAN
@@ -97,7 +98,7 @@ def merge_mag_and_ref_stats(mag_stats: pd.DataFrame, ref_stats: pd.DataFrame) ->
     """
     mag_stats['genome_type'] = 'synthetic_MAG'
     ref_stats['genome_type'] = 'reference'
-    merged_stats = mag_stats.append(ref_stats, ignore_index=True)
+    merged_stats = pd.concat([mag_stats, ref_stats], ignore_index=True)
     return merged_stats
 
 
