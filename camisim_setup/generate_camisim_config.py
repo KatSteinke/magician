@@ -42,11 +42,11 @@ def get_sample_size(file_record: Path, coverage: Optional[float]=1) -> float:
                       for record in SeqIO.parse(fasta_file, "fasta")])
     return round(coverage*(total_size/1000000000), 2)
 
-# TODO: this is becoming a giant almighty function, consider reworking?
+# TODO: this is becoming a giant almighty function, consider reworking
 
 
 def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, output_dir: str,
-                         readsim: str, readsim_path: Path, sample: str,
+                         readsim: str, readsim_path: Path, samtools_path: Path, sample: str,
                          amount_genomes: int, sample_size: float, error_profiles: Optional[Path] = "",
                          abundance_file: Optional[Path] = "", profile_name: Optional[str] = "mbarc",
                          own_error_basename: Optional[str] = "",
@@ -60,6 +60,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
         output_dir:             output directory for CAMISIM
         readsim:                read simulator to use
         readsim_path:           Path to the read simulator to use
+        samtools_path:          Path to samtools install to use
         sample:                 type of sample to use
         amount_genomes:         amount of genomes in the sample
         sample_size:            sample size in Gbp
@@ -108,7 +109,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
         raise ValueError("Custom error profile files and read lengths are only possible when specifying 'own' profiles.")
 
     # TODO: introduce more defaults?
-    config_string = '''\
+    config_string = f'''\
     [Main]
     # maximum number of processes
     max_processors=8
@@ -118,7 +119,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     phase=0
     
     # ouput directory, where the output will be stored (will be overwritten if set in from_profile)
-    output_directory={outdir}
+    output_directory={output_dir}
     
     # temporary directory
     temp_directory=/tmp
@@ -146,10 +147,10 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     
     # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
     # file path to executable
-    samtools={camidir}/tools/samtools-1.3/samtools
+    samtools={samtools_path}
     
     # file path to read simulation executable
-    readsim={simpath}
+    readsim={readsim_path}
     
     #error profiles:
     #for ART:
@@ -158,27 +159,27 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     #for wgsim:
     #error rate as <float> (e.g. 0.05 for 5% error rate)
     #blank for nanosim and wgsim
-    profile={profilename}
+    profile={profile_name}
     
     # Directory containing error profiles (can be blank for wgsim)
-    error_profiles={profile_path}
+    error_profiles={error_profiles}
     
     # Custom error profile filenames if using own error profile
-    base_profile_name={basename}
+    base_profile_name={own_error_basename}
     
     # Read length for custom error profile if used
-    profile_read_length={readlength}
+    profile_read_length={own_error_readlength}
     
     #paired end read, insert size (not applicable for nanosim)
-    fragments_size_mean={insertsize}
+    fragments_size_mean={insert_size}
     fragment_size_standard_deviation=27
     
     # Only relevant if not from_profile is run:
     [CommunityDesign]
     # optional: give abundance of genomes
-    distribution_file_paths={dist_file}
+    distribution_file_paths={abundance_file}
     # specify the samples size in Giga base pairs
-    size={samplesize}
+    size={sample_size}
     
     # how many different samples?
     number_of_samples=1
@@ -190,21 +191,21 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     # "nodes.dmp"
     # "merged.dmp"
     # "names.dmp"
-    ncbi_taxdump={camidir}/tools/ncbi-taxonomy_20170222.tar.gz
+    ncbi_taxdump={camisim_dir}/tools/ncbi-taxonomy_20170222.tar.gz
     
     # the strain simulator for de novo strain creation
-    strain_simulation_template={camidir}/scripts/StrainSimulationWrapper/sgEvolver/simulation_dir/
+    strain_simulation_template={camisim_dir}/scripts/StrainSimulationWrapper/sgEvolver/simulation_dir/
     
     # define communities: [community<integer>]
     [community0]
     # information about all included genomes:
     # can be used for multiple samples
-    metadata={metafile}
-    id_to_genome_file={genomefile}
+    metadata={meta_file}
+    id_to_genome_file={id_file}
     
     # how many genomes do you want to sample over all?
-    genomes_total={amount}
-    num_real_genomes={amount}
+    genomes_total={amount_genomes}
+    num_real_genomes={amount_genomes}
     
     # how many genomes per species taxon
     #   (species taxon will be replaced by OTU-cluster later on)
@@ -213,7 +214,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     
     # which kind of different samples do you need?
     #   replicates / timeseries_lognormal / timeseries_normal / differential
-    mode={sampletype}
+    mode={sample}
     
     # Part: community design
     # Set parameters of log-normal and normal distribution, number of samples
@@ -225,23 +226,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     
     # do you want to see a distribution before you decide to use it? yes/no
     view=no
-    '''.format(
-        camidir=camisim_dir,
-        metafile=meta_file,
-        genomefile=id_file,
-        outdir=output_dir,
-        readsim=readsim,
-        simpath=readsim_path,
-        sampletype=sample,
-        profile_path=error_profiles,
-        profilename=profile_name,
-        basename=own_error_basename,
-        readlength=own_error_readlength,
-        amount=amount_genomes,
-        samplesize=sample_size,
-        dist_file=abundance_file,
-        insertsize=insert_size
-    )
+    '''
     config_string = dedent(config_string)
     return config_string
 
@@ -260,6 +245,8 @@ if __name__ == "__main__":
     #parser.add_argument('-c', '--coverage', action="store",
     #                    help="Desired average coverage for the sample (default: 1X)",
     #                    default=1)
+    parser.add_argument("--samtools_path", action="store", help="Path to temp file containing samtools path (default: samtools_path.txt)",
+                         default="samtools_path.txt")
     parser.add_argument('-s', '--sample_size', action="store",
                         help="Total size of sample in gigabasepairs (default: 1)", default=1)
     parser.add_argument('--insert_size', action="store", help="Mean insert size in bp (default: 270)",
@@ -343,6 +330,12 @@ if __name__ == "__main__":
     else:
         read_sim_path = Path(args.read_sim_path).resolve()
 
+    # get samtools path from file - TODO: move to a function?
+    samtools_file = args.samtools_path
+    with open(samtools_file, "r") as read_samtools:
+        path_to_samtools = Path(read_samtools.readline().strip())
+    if not path_to_samtools.exists():
+        raise FileNotFoundError("Samtools not found at specified location.")
     # set remaining parameters
     filename = args.filename
     out_dir = args.out_dir
@@ -356,7 +349,7 @@ if __name__ == "__main__":
     genomes = get_file_length(genome_file)
     #size_total = get_sample_size(genome_file, coverage)
 
-    config_str = generate_config_file(camisim_dir, metadata, genome_file, out_dir, read_sim, read_sim_path, sample_type,
+    config_str = generate_config_file(camisim_dir, metadata, genome_file, out_dir, read_sim, read_sim_path, path_to_samtools, sample_type,
                                       genomes, sample_size, error_profile, abundance_file, art_profile_type,
                                       profile_basename, profile_readlength, insert_size)
     with open(filename, "w") as outfile:

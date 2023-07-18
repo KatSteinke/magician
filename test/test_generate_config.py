@@ -31,6 +31,7 @@ class TestGenerateSize(unittest.TestCase):
 
 
 class TestGenerateConfig(unittest.TestCase):
+    samtools_path = Path("path/to/samtools")
     def test_invalid_insert(self):
         camisim_dir = Path("/home/people/katste/camisim/CAMISIM")
         metadata = Path("test/data/metadata")
@@ -45,7 +46,7 @@ class TestGenerateConfig(unittest.TestCase):
         error_profiles = camisim_dir / "tools" / "art_illumina-2.3.6" / "profiles"
         with self.assertRaisesRegex(ValueError, "Mean insert size needs to be above 0."):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize,
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                           error_profiles=error_profiles, insert_size=insert)
 
     def test_only_wgsim_errorfree(self):
@@ -60,7 +61,7 @@ class TestGenerateConfig(unittest.TestCase):
         samplesize = 0.1
         with self.assertRaisesRegex(ValueError, "Error profile can only be omitted with wgsim"):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize)
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize)
 
     def test_catch_invalid_readsim(self):
         camisim_dir = Path("/home/people/katste/camisim/CAMISIM")
@@ -75,7 +76,7 @@ class TestGenerateConfig(unittest.TestCase):
         error_profiles = camisim_dir / "tools" / "art_illumina-2.3.6" / "profiles"
         with self.assertRaisesRegex(ValueError, "blah is not a valid read simulator"):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize,
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                           error_profiles=error_profiles)
 
     def test_catch_invalid_sample(self):
@@ -91,7 +92,7 @@ class TestGenerateConfig(unittest.TestCase):
         error_profiles = camisim_dir / "tools" / "art_illumina-2.3.6" / "profiles"
         with self.assertRaisesRegex(ValueError, "blah is not a valid sample type"):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize,
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                           error_profiles=error_profiles)
 
     def test_catch_custom_profile_errors(self):
@@ -108,20 +109,20 @@ class TestGenerateConfig(unittest.TestCase):
         profile_name = "blah"
         with self.assertRaisesRegex(ValueError, "blah is not a valid type of error profile."):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize,
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                           error_profiles=error_profiles, profile_name=profile_name)
         # own error profile with no additional information
         profile_name = "own"
         with self.assertRaisesRegex(ValueError, "Base profile name must be given when using custom error profile."):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize,
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                           error_profiles=error_profiles, profile_name=profile_name)
         # with only base name
         base_name = "test_R"
         with self.assertRaisesRegex(ValueError,
                                         "Read length for profile must be given when using custom error profile."):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize,
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                           error_profiles=error_profiles, profile_name=profile_name,
                                           own_error_basename=base_name)
         # with non-ART read simulator
@@ -129,7 +130,7 @@ class TestGenerateConfig(unittest.TestCase):
         readsim = "wgsim"
         with self.assertRaisesRegex(ValueError, "wgsim doesn't take custom profiles."):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize,
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                           error_profiles=error_profiles, profile_name=profile_name,
                                           own_error_basename=base_name, own_error_readlength=base_readlength)
 
@@ -138,7 +139,7 @@ class TestGenerateConfig(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,
                                     "Custom error profile files and read lengths are only possible when specifying 'own' profiles."):
             camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                          readsim_dir, sample, amount_genomes, samplesize,
+                                          readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                           error_profiles=error_profiles, profile_name=profile_name,
                                           own_error_basename=base_name, own_error_readlength=base_readlength)
 
@@ -148,6 +149,7 @@ class TestGenerateConfig(unittest.TestCase):
         id_to_genome = Path("test/data/id_to_genome_file")
         output_dir = "camisim_out"
         readsim = "art"
+        samtools_path = "path/to/samtools"
         readsim_dir = camisim_dir / "tools" / "art_illumina-2.3.6" / "art_illumina"
         sample = "replicates"
         amount_genomes = 2
@@ -192,7 +194,7 @@ class TestGenerateConfig(unittest.TestCase):
         
         # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
         # file path to executable
-        samtools=/home/people/katste/camisim/CAMISIM/tools/samtools-1.3/samtools
+        samtools=path/to/samtools
         
         # file path to read simulation executable
         readsim=/home/people/katste/camisim/CAMISIM/tools/art_illumina-2.3.6/art_illumina
@@ -274,7 +276,7 @@ class TestGenerateConfig(unittest.TestCase):
         '''
         correct_config_mbarc = dedent(correct_config_mbarc)
         generated_config_mbarc = camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                                         readsim_dir, sample, amount_genomes, samplesize,
+                                                         readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                                          error_profiles)
 
         assert generated_config_mbarc == correct_config_mbarc
@@ -316,7 +318,7 @@ class TestGenerateConfig(unittest.TestCase):
         
         # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
         # file path to executable
-        samtools=/home/people/katste/camisim/CAMISIM/tools/samtools-1.3/samtools
+        samtools=path/to/samtools
         
         # file path to read simulation executable
         readsim=/home/people/katste/camisim/CAMISIM/tools/art_illumina-2.3.6/art_illumina
@@ -401,7 +403,7 @@ class TestGenerateConfig(unittest.TestCase):
         test_readlength = 150
         correct_config_own = dedent(correct_config_own)
         generated_config_own = camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                                            readsim_dir, sample, amount_genomes, samplesize,
+                                                            readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                                             error_profiles, profile_name=profile_type,
                                                              own_error_basename=test_filename,
                                                              own_error_readlength=test_readlength)
@@ -446,7 +448,7 @@ class TestGenerateConfig(unittest.TestCase):
 
                 # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
                 # file path to executable
-                samtools=/home/people/katste/camisim/CAMISIM/tools/samtools-1.3/samtools
+                samtools=path/to/samtools
 
                 # file path to read simulation executable
                 readsim=/home/people/katste/camisim/CAMISIM/tools/art_illumina-2.3.6/art_illumina
@@ -529,7 +531,7 @@ class TestGenerateConfig(unittest.TestCase):
         correct_config_insert = dedent(correct_config_insert)
         insert = 600
         generated_config_insert = camiconf.generate_config_file(camisim_dir, metadata, id_to_genome, output_dir, readsim,
-                                                                readsim_dir, sample, amount_genomes, samplesize,
+                                                                readsim_dir, self.samtools_path, sample, amount_genomes, samplesize,
                                                                 error_profiles, profile_name=profile_type,
                                                                 own_error_basename=test_filename,
                                                                 own_error_readlength=test_readlength,

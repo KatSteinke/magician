@@ -1,0 +1,7 @@
+name: bbtools_new
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bbmap=38.86

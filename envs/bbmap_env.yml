@@ -1,0 +1,9 @@
+name: bbmap_env
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bbmap=36.32
+  - metabat2
+  - samtools=1.10
