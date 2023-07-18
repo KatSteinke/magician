@@ -143,7 +143,7 @@ def generate_config_file(camisim_dir: Path, meta_file: Path, id_file: Path, outp
     [ReadSimulator]
     # which readsimulator to use:
     #           Choice of 'art', 'wgsim', 'nanosim', 'pbsim'
-    type={read_sim}
+    type={readsim}
     
     # Samtools (http://www.htslib.org/) takes care of sam/bam files. Version 1.0 or higher required!
     # file path to executable
