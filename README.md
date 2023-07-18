@@ -30,7 +30,7 @@ simulate your communities. The first column lists the paths to the genomes, the 
 (chromosome or plasmid) and all subsequent columns list community composition names and the relative abundance of the 
 sequences in these communities:
 ```
-| genome           | seq_type   | community1 | community2 | ... |
+| genomes          | seq_type   | community1 | community2 | ... |
 |------------------|------------|------------|------------|-----|
 | /path/to/genome1 | chromosome | 1          | 1.5        |     |
 | /path/to/genome2 | chromosome | 1          | 0          |     |
