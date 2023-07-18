@@ -1,10 +1,10 @@
 # MAGICIAN
 MAGICIAN is a tool for easily generating simulated metagenome-assembled genomes from a user-determined "community".
 ## Requirements
-MAGICIAN is a Snakemake pipeline that uses Singularity and/or conda to manage dependencies.
-Thus, it primarily requires Snakemake and Singularity or conda/mamba to be used.
+MAGICIAN is a Snakemake pipeline that uses conda to manage dependencies.
+Thus, it primarily requires Snakemake and conda/mamba to be used.
 
-If not using Singularity, it is also necessary to install [a fork of CAMISIM 1.2](https://github.com/KatSteinke/CAMISIM)
+It is also necessary to install [a fork of CAMISIM 1.2](https://github.com/KatSteinke/CAMISIM)
 in order to use custom error profiles. This can be done by running
 ```commandline
 git clone https://github.com/KatSteinke/CAMISIM
@@ -15,9 +15,7 @@ In order to get started with MAGICIAN, simply clone the repository:
 git clone https://github.com/KatSteinke/magician
 ```
 
-Depending on your choice of dependency management (Singularity vs. conda), the Snakefile may have to be adapted.
-### Using Singularity
-When using Singularity, set `CAMISIM_DIR` in the Snakefile to `/CAMISIM`.
+You will also have to adapt the Snakefile. 
 ### Using conda (bringing your own CAMISIM)
 When using your own copy of CAMISIM, set `CAMISIM_DIR` to the directory in which you installed CAMISIM.
 
@@ -54,7 +52,7 @@ community, give `summaries/bin_summary_[COMMUNITY].xlsx` here, replacing `[COMMU
 you wish to simulate. 
 * `--snake_flags`: the flags to be passed on to Snakemake, enclosed in double quotes. As a minimum, this means `"-n "` 
 for a dry run or `"--cores [N_CORES]"` (with `[N_CORES]` being the amount of cores Snakemake should use) for an actual run. \
-To run rules in Singularity containers, specify `--use-singularity`. To use conda or mamba, specify `--use-conda`
+To use conda or mamba, specify `--use-conda`
   (and `--conda-frontend conda` if required). For all else, refer to Snakemake's documentation.
 #### Optional arguments
 * `--profile_type`: the error profile CAMISIM should use for ART. This defaults to CAMISIM's default of `mbarc`; other choices
