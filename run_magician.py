@@ -5,13 +5,13 @@ import subprocess
 from argparse import ArgumentParser
 from typing import List, Optional
 
-def get_snake_cmd(target: str, profile_type: Optional[str] = "mbarc", profile_base: Optional[str] = "",
-                  readlength: Optional[str] = "",
-                  insert_size: Optional[int] = 270,
-                  cluster_cmd: Optional[str] = "",
+def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = "mbarc", profile_base: Optional[str] = "",
+                  readlength: Optional[str] = "", insert_size: Optional[int] = 270, cluster_cmd: Optional[str] = "",
                   *snake_params) -> List[str]:
     """Get the Snakemake command with optional configuration parameters.
     Arguments:
+        input_file:     File with paths to source genomes, sequence type (plasmid/chromosome) and desired relative
+                        copy number in each community to simulate
         target:         rule or output file for Snakemake
         profile_type:   type of ART error profile to use for CAMISIM
         profile_base:   path to own ART error profile for CAMISIM
@@ -19,6 +19,7 @@ def get_snake_cmd(target: str, profile_type: Optional[str] = "mbarc", profile_ba
         insert_size:    mean insert size to use for simulation (default: 270)
         cluster_cmd:    command to use for cluster mode
         snake_params:   parameters to pass to the Snakefile
+
     """
     # check all elements of the command
     for input_param in [target, profile_type, profile_base, readlength, insert_size]:
@@ -47,8 +48,10 @@ def get_snake_cmd(target: str, profile_type: Optional[str] = "mbarc", profile_ba
 
     # get basic command
     snakemake_cmd = ["snakemake", target, "-s", snake_path, "--config", 'profile_type="{}"'.format(profile_type),
-     'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength),
-     'insert_size={}'.format(insert_size), *snake_params]
+                     'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength),
+                     'insert_size={}'.format(insert_size),
+                     'samples_file={}'.format(input_file),
+                     *snake_params]
 
     # if cluster mode is specified:
     if cluster_cmd:
@@ -93,7 +96,7 @@ if __name__ == "__main__":
     cluster_cmd = args.cluster
     snake_flags = args.snake_flags[0].split()
 
-    snake_command = get_snake_cmd(target_result, profiletype, profilename, read_length, insert_size, cluster_cmd,
-                                  *snake_flags)
+    snake_command = get_snake_cmd(pathlib.Path(__file__).parent / "data" / "test_distribution_file.tsv", target_result,
+                                  profiletype, profilename, read_length, insert_size, cluster_cmd, *snake_flags)
     subprocess.run(snake_command)
 
