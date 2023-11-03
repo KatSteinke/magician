@@ -45,11 +45,22 @@ class TestRunMagician(unittest.TestCase):
                             'insert_size=500', "-n"]
         snake_flags = ["-n"]
         insert_size = 500
-        test_command = test_command = run_magician.get_snake_cmd("all_bin_summaries", self.profile_type,
+        test_command = run_magician.get_snake_cmd("all_bin_summaries", self.profile_type,
                                                                  self.profile_base,
                                                                  self.readlength, insert_size, self.cluster_cmd,
                                                                  *snake_flags)
         assert test_command == expected_command
+
+
+    def test_bad_insertsize(self):
+        """Catch bad insert size."""
+        snake_flags = ["-n"]
+        insert_size = 0
+        with self.assertRaisesRegex(ValueError, r"Insert size needs to be above 0."):
+            run_magician.get_snake_cmd("all_bin_summaries", self.profile_type,
+                                       self.profile_base,
+                                       self.readlength, insert_size, self.cluster_cmd,
+                                       *snake_flags)
 
     def test_bad_file_name(self):
         bad_result = "test_ä.txt"
