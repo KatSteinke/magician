@@ -1,0 +1,4 @@
+genomes	seq_type	test_magician
+test/data/test_genomes/Bifidobacterium_choerinum_FMB-1_CP018044.1.gb	chromosome	1
+test/data/test_genomes/Enterococcus_faecium_Ef_aus00233_LT598663.1.gb	chromosome	2
+test/data/test_genomes/Mycoplasma_pneumoniae_C267_NZ_CP014267.gb	chromosome	3

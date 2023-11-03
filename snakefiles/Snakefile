@@ -6,7 +6,8 @@ import pathlib
 import snakemake_helpers as helpers
 
 # required: tab-separated file with genbank path to abundance in sample mapping
-with open("sample_distributions.tsv", "r") as samples_file: # TODO fix/make variable
+SAMPLE_FILE = config['samples_file']
+with open(SAMPLE_FILE, "r") as samples_file:
     SAMPLES = samples_file.readline().strip().split("\t")[2:] # from the header, take all but the first two column names
 
 # Directory containing CAMISIM, change as appropriate - make variable again?
@@ -85,7 +86,7 @@ rule all_bin_summaries:
 rule camisim_metafiles:
     params:
         sample_col = "{sample}",
-        samplefile = "sample_distributions.tsv"
+        samplefile = SAMPLE_FILE
     output:
         camisim_metafile = 'camisim_configfiles/metadata_{sample}',
         camisim_genomefile = 'camisim_configfiles/id_to_genome_file_{sample}',
@@ -159,9 +160,6 @@ rule run_camisim:
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
-        #module load ngs tools
-        #module unload anaconda3/4.4.0
-        #module load anaconda2/4.4.0
 
 # Move CAMISIM result files, clear out genome locations and metadata
 rule cleanup_camisim:
@@ -331,7 +329,7 @@ rule metabat2:
     params:
         out="metabat2/{sample}/{sample}.bin",
         #time="time/metabat2/{sample}.time",
-        binsize = lambda wildcards: 10000 if helpers.check_plasmids(pathlib.Path("sample_distributions.tsv"),
+        binsize = lambda wildcards: 10000 if helpers.check_plasmids(pathlib.Path(SAMPLE_FILE),
             wildcards.sample) else 200000
     log:
                 out="logs/metabat2/{sample}.out",
