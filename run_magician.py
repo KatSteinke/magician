@@ -96,7 +96,7 @@ if __name__ == "__main__":
     cluster_cmd = args.cluster
     snake_flags = args.snake_flags[0].split()
 
-    snake_command = get_snake_cmd(pathlib.Path(__file__).parent / "data" / "test_distribution_file.tsv", target_result,
+    snake_command = get_snake_cmd(community_file, target_result,
                                   profiletype, profilename, read_length, insert_size, cluster_cmd, *snake_flags)
     subprocess.run(snake_command)
 
