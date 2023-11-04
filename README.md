@@ -2,7 +2,19 @@
 MAGICIAN is a tool for easily generating simulated metagenome-assembled genomes from a user-determined "community".
 ## Requirements
 MAGICIAN is a Snakemake pipeline that uses conda to manage dependencies.
-Thus, it primarily requires Snakemake and conda/mamba to be used.
+Thus, it primarily requires Snakemake and conda or mamba to be used (mamba is recommended). \
+Requirements for the base environment are given in `requirements.yml` and can be installed as follows:
+
+**Using conda**:
+```commandline
+conda env create --file requirements.yml
+```
+
+**Using mamba**:
+```commandline
+mamba env create --file requirements.yml
+```
+
 
 It is also necessary to install [a fork of CAMISIM 1.2](https://github.com/KatSteinke/CAMISIM)
 in order to use custom error profiles. This can be done by running
