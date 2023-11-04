@@ -45,17 +45,18 @@ class TestRunMagician(unittest.TestCase):
     readlength = ""
     insert_size = 270
     cluster_cmd = ""
+    cores = 6
     distributions_file = pathlib.Path(__file__).parent / "data" / "test_distribution_file.tsv"
     def test_default_command_success(self):
         """Run Snakemake with default settings."""
         expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
                             "--config", 'profile_type="mbarc"',
                             'profile_name="False"', 'readlength="False"',
-                            'insert_size=270', f"samples_file={self.distributions_file}", "-n"]
+                            'insert_size=270', f"samples_file={self.distributions_file}", "--cores", "6", "-n"]
         snake_flags = ["-n"]
-        test_command = run_magician.get_snake_cmd(self.distributions_file,
-                                                  "all_bin_summaries", self.profile_type, self.profile_base,
-                                                  self.readlength, self.insert_size, self.cluster_cmd, *snake_flags)
+        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+                                                  self.profile_base, self.readlength, self.insert_size,
+                                                  self.cluster_cmd, self.cores, *snake_flags)
         assert test_command == expected_command
 
 
@@ -65,12 +66,13 @@ class TestRunMagician(unittest.TestCase):
                             "--cluster", "qsub -pe threaded {threads}",
                             "--config", 'profile_type="mbarc"',
                             'profile_name="False"', 'readlength="False"',
-                            'insert_size=270', f"samples_file={self.distributions_file}", "-n"]
+                            'insert_size=270', f"samples_file={self.distributions_file}", "--cores", "6", "-n"]
         snake_flags = ["-n"]
         cluster_cmd = "qsub -pe threaded {threads}"
-        test_command = run_magician.get_snake_cmd(self.distributions_file,
-                                                  "all_bin_summaries", self.profile_type, self.profile_base,
-                                                  self.readlength, self.insert_size, cluster_cmd, *snake_flags)
+        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+                                                  self.profile_base, self.readlength, self.insert_size, cluster_cmd,
+                                                  self.cores,
+                                                  *snake_flags)
         assert test_command == expected_command
 
     def test_change_settings(self):
@@ -78,12 +80,13 @@ class TestRunMagician(unittest.TestCase):
         expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
                             "--config", 'profile_type="mbarc"',
                             'profile_name="False"', 'readlength="False"',
-                            'insert_size=500',  f"samples_file={self.distributions_file}", "-n"]
+                            'insert_size=500',  f"samples_file={self.distributions_file}", "--cores", "6", "-n"]
         snake_flags = ["-n"]
         insert_size = 500
-        test_command = run_magician.get_snake_cmd(self.distributions_file,
-                                                  "all_bin_summaries", self.profile_type, self.profile_base,
-                                                  self.readlength, insert_size, self.cluster_cmd, *snake_flags)
+        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+                                                  self.profile_base, self.readlength, insert_size, self.cluster_cmd,
+                                                  self.cores,
+                                                  *snake_flags)
         assert test_command == expected_command
 
 
@@ -92,24 +95,37 @@ class TestRunMagician(unittest.TestCase):
         snake_flags = ["-n"]
         insert_size = 0
         with self.assertRaisesRegex(ValueError, r"Insert size needs to be above 0."):
-            run_magician.get_snake_cmd(self.distributions_file,
-                                       "all_bin_summaries", self.profile_type, self.profile_base, self.readlength,
-                                       insert_size, self.cluster_cmd, *snake_flags)
+            run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+                                       self.profile_base, self.readlength, insert_size, self.cluster_cmd, *snake_flags)
 
     def test_bad_file_name(self):
         bad_result = "test_ä.txt"
         with self.assertRaisesRegex(ValueError,
                                     r"""Arguments can only consist of alphanumeric characters, quote marks, \., \/, \_, \- and space."""):
-            run_magician.get_snake_cmd(self.distributions_file,
-                                       bad_result)
+            run_magician.get_snake_cmd(self.distributions_file, bad_result)
 
+    def test_bad_cores(self):
+        """Handle wrong dtype for cores."""
+        error_msg = r"Amount of cores must be an integer above 0\."
+        bad_cores = "six"
+        with self.assertRaisesRegex(ValueError, error_msg):
+            run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+                                       self.profile_base, self.readlength, self.insert_size, self.cluster_cmd,
+                                       bad_cores)
+    def test_invalid_cores(self):
+        """Handle invalid value for cores."""
+        error_msg = r"Amount of cores must be an integer above 0\."
+        bad_cores = 0
+        with self.assertRaisesRegex(ValueError, error_msg):
+            run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+                                       self.profile_base, self.readlength, self.insert_size, self.cluster_cmd,
+                                       bad_cores)
     def test_missing_profile_info(self):
         result = "test.txt"
         profile = "own"
         with self.assertRaisesRegex(ValueError,
                                     "Both name of the custom error profile and read length of the error profile must be given when using own profiles."):
-            run_magician.get_snake_cmd(self.distributions_file, result,
-                                       profile)
+            run_magician.get_snake_cmd(self.distributions_file, result, profile)
 
     def test_too_much_info(self):
         result = "test.txt"
@@ -117,5 +133,4 @@ class TestRunMagician(unittest.TestCase):
         extra_name = "TestR"
         with self.assertRaisesRegex(ValueError,
                                     "Name of the error profile and read length can only be specified when using own profiles."):
-            run_magician.get_snake_cmd(self.distributions_file, result,
-                                       profile, extra_name)
+            run_magician.get_snake_cmd(self.distributions_file, result, profile, extra_name)

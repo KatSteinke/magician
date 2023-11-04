@@ -54,15 +54,15 @@ run_magician.py [-h] [--target TARGET]
                        [--profile_name PROFILE_NAME]
                        [--profile_readlength PROFILE_READLENGTH]
                        [--insert_size INSERT_SIZE] [--cluster CLUSTER]
+                       [--cores CORES]
                        community_file
-                       --snake_flags "--cores [N_CORES] [SNAKE_FLAGS...]"
+                       [--snake_flags "SNAKE_FLAGS..."]
 
 ```
 #### Required arguments
 
 * `community_file`: the tab-separated file with sample distributions for the community/communities you wish to simulate. 
-* `--snake_flags`: the flags to be passed on to Snakemake, enclosed in double quotes. As a minimum, this means `"-n "` 
-for a dry run or `"--cores [N_CORES]"` (with `[N_CORES]` being the amount of cores Snakemake should use) for an actual run. \
+* `--snake_flags`: the flags to be passed on to Snakemake, enclosed in double quotes. For a dry run, use `"-n "`.
 To use conda or mamba, specify `--use-conda`
   (and `--conda-frontend conda` if required). For all else, refer to Snakemake's documentation.
 #### Optional arguments
@@ -79,6 +79,8 @@ error profiles (e.g. `path/to/custom/profile_R` if  forward and reverse reads ar
 error profile.
 * `--insert_size`: mean insert size for read simulation (defaults to 270 bp)
 * `--cluster`: when using Snakemake's cluster mode, supply the command for submitting jobs as you would with Snakemake
+* `--cores`: the amount of cores Snakemake should use (default: 6)
+
 #### Starting a test run
 To start a test run with the sample genomes found in test/data/test_genomes, run `python3 run_magician.py` without any arguments. The script will show usage and ask whether to start a test run:
 ```
@@ -86,6 +88,7 @@ usage: run_magician.py [-h] [--target TARGET] [--profile_type {mbarc,hi,mi,hi150
                        [--profile_name PROFILE_NAME]
                        [--profile_readlength PROFILE_READLENGTH]
                        [--insert_size INSERT_SIZE] [--cluster CLUSTER]
+                       [--cores CORES]
                        [--snake_flags [SNAKE_FLAGS ...]]
                        community_file
 Start local example run with sample genomes and output to /home/kma/magician? [y/n]

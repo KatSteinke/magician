@@ -20,6 +20,8 @@ logger.addHandler(plain_console_log)
 # set defaults
 DEFAULT_PROFILE = "mbarc"
 DEFAULT_INSERT = 270
+DEFAULT_CORES = 6
+
 
 def make_demo_tempfile(tempfile: pathlib.Path) -> None:
     """Convert the sample distributions file given in test data to use absolute paths for portability
@@ -39,6 +41,7 @@ def make_demo_tempfile(tempfile: pathlib.Path) -> None:
 def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT_PROFILE, profile_base: Optional[str] = "",
                   readlength: Optional[str] = "", insert_size: Optional[int] = DEFAULT_INSERT,
                   cluster_cmd: Optional[str] = "",
+                  cores: Optional[int]=DEFAULT_CORES,
                   *snake_params) -> List[str]:
     """Get the Snakemake command with optional configuration parameters.
     Arguments:
@@ -50,6 +53,7 @@ def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT
         readlength:     read length used for own ART error profile
         insert_size:    mean insert size to use for simulation (default: 270)
         cluster_cmd:    command to use for cluster mode
+        cores:          the amount of cores Snakemake should use
         snake_params:   parameters to pass to the Snakefile
 
     """
@@ -62,6 +66,15 @@ def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT
     # sanity check parameters
     if insert_size <= 0:
         raise ValueError("Insert size needs to be above 0.")
+
+    core_error = "Amount of cores must be an integer above 0."
+    # if we get a bad input for amount of cores we want to complain consistently
+    try:
+        cores = int(cores)
+    except ValueError:
+        raise ValueError(core_error)
+    if cores <= 0:
+        raise ValueError(core_error)
 
     if profile_type == "own" and not (profile_base and readlength):
         raise ValueError("Both name of the custom error profile and read length of the error profile must be given when using own profiles.")
@@ -79,10 +92,12 @@ def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT
     snake_path = pathlib.Path(__file__).resolve().parent / "snakefiles" / "Snakefile"
 
     # get basic command
-    snakemake_cmd = ["snakemake", target, "-s", snake_path, "--config", 'profile_type="{}"'.format(profile_type),
+    snakemake_cmd = ["snakemake", target, "-s", snake_path,
+                     "--config", 'profile_type="{}"'.format(profile_type),
                      'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength),
                      'insert_size={}'.format(insert_size),
                      'samples_file={}'.format(input_file),
+                     "--cores", str(cores),
                      *snake_params]
 
     # if cluster mode is specified:
@@ -119,6 +134,8 @@ if __name__ == "__main__":
     parser.add_argument("--cluster", action="store", default="",
                         help="""For use with snakemake's cluster mode; supply command for submitting jobs as you \
                         would with snakemake.""")
+    parser.add_argument("--cores", action="store", default=DEFAULT_CORES,
+                        help=f"Amount of cores Snakemake should use (default: {DEFAULT_CORES})")
     parser.add_argument("--snake_flags", nargs='*', help="Flags to be passed to snakemake, enclosed in quotes")
     # if no arguments are given, show usage and offer demo
     if len(sys.argv) == 1:
@@ -148,9 +165,10 @@ if __name__ == "__main__":
     read_length = args.profile_readlength
     insert_size = args.insert_size
     cluster_cmd = args.cluster
+    snake_cores = args.cores
     snake_flags = args.snake_flags[0].split()
 
-    snake_command = get_snake_cmd(community_file, target_result,
-                                  profiletype, profilename, read_length, insert_size, cluster_cmd, *snake_flags)
+    snake_command = get_snake_cmd(community_file, target_result, profiletype, profilename, read_length, insert_size,
+                                  cluster_cmd, snake_cores, *snake_flags)
     subprocess.run(snake_command, check=True)
 
