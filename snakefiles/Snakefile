@@ -11,7 +11,7 @@ with open(SAMPLE_FILE, "r") as samples_file:
     SAMPLES = samples_file.readline().strip().split("\t")[2:] # from the header, take all but the first two column names
 
 # Directory containing CAMISIM, change as appropriate - make variable again?
-CAMISIM_DIR = "/home/kma/CAMISIM"
+CAMISIM_DIR = config["camisim_path"]
 #CAMISIM_DIR = "/CAMISIM"
 
 # package base dir
