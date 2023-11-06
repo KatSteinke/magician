@@ -67,7 +67,19 @@ error profiles (e.g. `path/to/custom/profile_R` if  forward and reverse reads ar
 error profile.
 * `--insert_size`: mean insert size for read simulation (defaults to 270 bp)
 * `--cluster`: when using Snakemake's cluster mode, supply the command for submitting jobs as you would with Snakemake
-
+#### Starting a test run
+To start a test run with the sample genomes found in test/data/test_genomes, run `python3 run_magician.py` without any arguments. The script will show usage and ask whether to start a test run:
+```
+usage: run_magician.py [-h] [--target TARGET] [--profile_type {mbarc,hi,mi,hi150,own}]
+                       [--profile_name PROFILE_NAME]
+                       [--profile_readlength PROFILE_READLENGTH]
+                       [--insert_size INSERT_SIZE] [--cluster CLUSTER]
+                       [--snake_flags [SNAKE_FLAGS ...]]
+                       community_file
+Start local example run with sample genomes and output to /home/kma/magician? [y/n]
+```
+Confirm with `y` to start the test run. \
+Example summary files for such a run can be found under test/data/sample_summaries; the full output is available at Zenodo under TODO ZENODO LINK.
 # License
 Copyright 2023 Kat Steinke
 

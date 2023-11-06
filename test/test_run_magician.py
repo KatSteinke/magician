@@ -1,8 +1,42 @@
 import pathlib
 import unittest
 
+import pandas as pd
+
 import run_magician
 
+
+class TestMakeDemoFile(unittest.TestCase):
+    demo_tempfile = pathlib.Path(__file__).parent / "data" / "test_tmp_demo_distributions.tsv"
+    @classmethod
+    def setUpClass(cls):
+        cls.demo_tempfile.unlink(missing_ok=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.demo_tempfile.unlink(missing_ok=True)
+
+    def test_write_demo_file(self):
+        """Successfully convert relative paths in the example file to absolute paths."""
+        expected_results = pd.DataFrame(data={"genomes": [str(pathlib.Path(__file__).resolve().parent
+                                                          / "data"/ "test_genomes"
+                                                          / "Bifidobacterium_choerinum_FMB-1_CP018044.1.gb"),
+                                                          str(pathlib.Path(__file__).resolve().parent
+                                                          / "data" / "test_genomes"
+                                                          / "Enterococcus_faecium_Ef_aus00233_LT598663.1.gb"),
+                                                          str(pathlib.Path(__file__).resolve().parent
+                                                          / "data" / "test_genomes"
+                                                          / "Mycoplasma_pneumoniae_C267_NZ_CP014267.gb")
+                                                          ],
+                                              "seq_type": ["chromosome", "chromosome", "chromosome"],
+                                              "test_magician": [1, 2, 3]})
+        log_msg = f'INFO:MAGICIAN:Creating temporary input file {self.demo_tempfile}'
+        with self.assertLogs("MAGICIAN", level="INFO") as logged:
+            run_magician.make_demo_tempfile(self.demo_tempfile)
+            assert log_msg in logged.output
+        test_result = pd.read_csv(self.demo_tempfile, sep="\t")
+        pd.testing.assert_frame_equal(test_result, expected_results)
+        
 
 class TestRunMagician(unittest.TestCase):
     snake_path = pathlib.Path(__file__).resolve().parent.parent / "snakefiles" / "Snakefile"
