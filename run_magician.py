@@ -147,7 +147,7 @@ if __name__ == "__main__":
             make_demo_tempfile(local_tempfile)
             snake_command = get_snake_cmd(local_tempfile, "all_bin_summaries",
                                           DEFAULT_PROFILE, "", "", DEFAULT_INSERT, "",
-                                          "--cores", "6", "--use-conda")
+                                          DEFAULT_CORES, "--use-conda")
             snake_run = subprocess.run(snake_command, check=True)
             sys.exit(snake_run.returncode)
         if run_demo == "n":
