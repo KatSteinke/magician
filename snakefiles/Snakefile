@@ -92,7 +92,7 @@ rule camisim_metafiles:
         camisim_genomefile = 'camisim_configfiles/id_to_genome_file_{sample}',
         camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}',
         fasta_checkfile = 'camisim_fasta_{sample}/{sample}_checkfile'
-    #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "base_env.yml"
+    #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"
     shell:
         '''
         python3 {MAGICIAN_DIR}/camisim_setup/extract_camisim_data.py \
@@ -129,7 +129,7 @@ rule camisim_configfiles:
             else pathlib.Path(config["profile_name"]).parent
     output:
         camisim_configfile = 'camisim_config_{sample}.ini'
-    #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "base_env.yml"
+    #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"
     shell:
          '''
          python3 {MAGICIAN_DIR}/camisim_setup/generate_camisim_config.py \
@@ -514,7 +514,7 @@ rule summarize_results:
          drep_mummer = "drep_genomes/{sample}/data_tables/Ndb.csv",
     output:
          summary_stats = "summaries/general_summary_{sample}.xlsx"
-    #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "base_env.yml"
+    #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"
     shell:
          '''
          python3 {MAGICIAN_DIR}/generate_summary/extract_stats.py \
@@ -527,7 +527,7 @@ rule make_bin_summary:
          summary_stats = "summaries/general_summary_{sample}.xlsx"
     output:
           bin_stats = "summaries/bin_summary_{sample}.xlsx"
-    #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "base_env.yml"
+    #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"
     shell:
          '''
          python3 {MAGICIAN_DIR}/generate_summary/make_comparison_table.py \

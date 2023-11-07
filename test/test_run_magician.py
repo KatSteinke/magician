@@ -45,6 +45,7 @@ class TestRunMagician(unittest.TestCase):
     readlength = ""
     insert_size = 270
     cluster_cmd = ""
+    cores = 6
     distributions_file = pathlib.Path(__file__).parent / "data" / "test_distribution_file.tsv"
 
     def test_default_command_success(self):
@@ -56,12 +57,12 @@ class TestRunMagician(unittest.TestCase):
                             "--use-conda",
                             "--conda-frontend", "conda",
                             "--configfile", str(run_magician.default_config_file),
-                            "-n"]
+                            "--cores", "6", "-n"]
         snake_flags = ["-n"]
         test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
-                                                  self.profile_type, self.profile_base,
-                                                  self.readlength, self.insert_size,
-                                                  self.cluster_cmd, *snake_flags)
+                                                  self.profile_type,
+                                                  self.profile_base, self.readlength, self.insert_size,
+                                                  self.cluster_cmd, self.cores, *snake_flags)
         assert test_command == expected_command
 
     def test_use_config_success(self):
@@ -75,12 +76,14 @@ class TestRunMagician(unittest.TestCase):
                             "--use-conda",
                             "--conda-frontend", "mamba",
                             "--configfile", str(config_file),
+                            "--cores", "6",
                             "-n"]
         snake_flags = ["-n"]
         test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
                                                   self.profile_type, self.profile_base,
                                                   self.readlength, self.insert_size,
-                                                  self.cluster_cmd, *snake_flags,
+                                                  self.cluster_cmd, self.cores,
+                                                  *snake_flags,
                                                   config_path = config_file)
         assert test_command == expected_command
 
@@ -93,12 +96,14 @@ class TestRunMagician(unittest.TestCase):
                             'insert_size=270', f"samples_file={self.distributions_file}",
                             "--use-conda",
                             "--conda-frontend", "conda",
-                            "--configfile", str(run_magician.default_config_file), "-n"]
+                            "--configfile", str(run_magician.default_config_file), "--cores", "6",
+                            "-n"]
         snake_flags = ["-n"]
         cluster_cmd = "qsub -pe threaded {threads}"
         test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
                                                   self.profile_type, self.profile_base,
                                                   self.readlength, self.insert_size, cluster_cmd,
+                                                  self.cores,
                                                   *snake_flags)
         assert test_command == expected_command
 
@@ -111,12 +116,13 @@ class TestRunMagician(unittest.TestCase):
                             "--use-conda",
                             "--conda-frontend", "conda",
                             "--configfile", str(run_magician.default_config_file),
-                            "-n"]
+                            "--cores", "6", "-n"]
         snake_flags = ["-n"]
         insert_size = 500
         test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
                                                   self.profile_type, self.profile_base,
                                                   self.readlength, insert_size, self.cluster_cmd,
+                                                  self.cores,
                                                   *snake_flags)
         assert test_command == expected_command
 
@@ -126,8 +132,8 @@ class TestRunMagician(unittest.TestCase):
         insert_size = 0
         with self.assertRaisesRegex(ValueError, r"Insert size needs to be above 0."):
             run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
-                                       self.profile_type, self.profile_base, self.readlength,
-                                       insert_size, self.cluster_cmd, *snake_flags)
+                                       self.profile_type,
+                                       self.profile_base, self.readlength, insert_size, self.cluster_cmd, *snake_flags)
 
     def test_bad_file_name(self):
         bad_result = "test_ä.txt"
@@ -135,6 +141,22 @@ class TestRunMagician(unittest.TestCase):
                                     r"""Arguments can only consist of alphanumeric characters, quote marks, \., \/, \_, \- and space."""):
             run_magician.get_snake_cmd(self.distributions_file, bad_result)
 
+    def test_bad_cores(self):
+        """Handle wrong dtype for cores."""
+        error_msg = r"Amount of cores must be an integer above 0\."
+        bad_cores = "six"
+        with self.assertRaisesRegex(ValueError, error_msg):
+            run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+                                       self.profile_base, self.readlength, self.insert_size, self.cluster_cmd,
+                                       bad_cores)
+    def test_invalid_cores(self):
+        """Handle invalid value for cores."""
+        error_msg = r"Amount of cores must be an integer above 0\."
+        bad_cores = 0
+        with self.assertRaisesRegex(ValueError, error_msg):
+            run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+                                       self.profile_base, self.readlength, self.insert_size, self.cluster_cmd,
+                                       bad_cores)
     def test_missing_profile_info(self):
         result = "test.txt"
         profile = "own"
