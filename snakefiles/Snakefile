@@ -6,11 +6,12 @@ import pathlib
 import snakemake_helpers as helpers
 
 # required: tab-separated file with genbank path to abundance in sample mapping
-with open("sample_distributions.tsv", "r") as samples_file: # TODO fix/make variable
+SAMPLE_FILE = config['samples_file']
+with open(SAMPLE_FILE, "r") as samples_file:
     SAMPLES = samples_file.readline().strip().split("\t")[2:] # from the header, take all but the first two column names
 
 # Directory containing CAMISIM, change as appropriate - make variable again?
-CAMISIM_DIR = "/home/kma/CAMISIM"
+CAMISIM_DIR = config["camisim_path"]
 #CAMISIM_DIR = "/CAMISIM"
 
 # package base dir
@@ -85,13 +86,13 @@ rule all_bin_summaries:
 rule camisim_metafiles:
     params:
         sample_col = "{sample}",
-        samplefile = "sample_distributions.tsv"
+        samplefile = SAMPLE_FILE
     output:
         camisim_metafile = 'camisim_configfiles/metadata_{sample}',
         camisim_genomefile = 'camisim_configfiles/id_to_genome_file_{sample}',
         camisim_abundance = 'camisim_configfiles/id_to_distributions_{sample}',
         fasta_checkfile = 'camisim_fasta_{sample}/{sample}_checkfile'
-    #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "base_env.yml"
+    #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"
     shell:
         '''
         python3 {MAGICIAN_DIR}/camisim_setup/extract_camisim_data.py \
@@ -128,7 +129,7 @@ rule camisim_configfiles:
             else pathlib.Path(config["profile_name"]).parent
     output:
         camisim_configfile = 'camisim_config_{sample}.ini'
-    #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "base_env.yml"
+    #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"
     shell:
          '''
          python3 {MAGICIAN_DIR}/camisim_setup/generate_camisim_config.py \
@@ -159,9 +160,6 @@ rule run_camisim:
         cat camisim_out/{wildcards.sample}/*/reads/*1.fq.gz > {output.concat_results_r1}
         cat camisim_out/{wildcards.sample}/*/reads/*2.fq.gz > {output.concat_results_r2}
         '''
-        #module load ngs tools
-        #module unload anaconda3/4.4.0
-        #module load anaconda2/4.4.0
 
 # Move CAMISIM result files, clear out genome locations and metadata
 rule cleanup_camisim:
@@ -331,7 +329,7 @@ rule metabat2:
     params:
         out="metabat2/{sample}/{sample}.bin",
         #time="time/metabat2/{sample}.time",
-        binsize = lambda wildcards: 10000 if helpers.check_plasmids(pathlib.Path("sample_distributions.tsv"),
+        binsize = lambda wildcards: 10000 if helpers.check_plasmids(pathlib.Path(SAMPLE_FILE),
             wildcards.sample) else 200000
     log:
                 out="logs/metabat2/{sample}.out",
@@ -516,7 +514,7 @@ rule summarize_results:
          drep_mummer = "drep_genomes/{sample}/data_tables/Ndb.csv",
     output:
          summary_stats = "summaries/general_summary_{sample}.xlsx"
-    #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "base_env.yml"
+    #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"
     shell:
          '''
          python3 {MAGICIAN_DIR}/generate_summary/extract_stats.py \
@@ -529,7 +527,7 @@ rule make_bin_summary:
          summary_stats = "summaries/general_summary_{sample}.xlsx"
     output:
           bin_stats = "summaries/bin_summary_{sample}.xlsx"
-    #conda: pathlib.Path(workflow.current_basedir).parent / "envs" / "base_env.yml"
+    #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"
     shell:
          '''
          python3 {MAGICIAN_DIR}/generate_summary/make_comparison_table.py \
