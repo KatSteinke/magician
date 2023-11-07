@@ -5,9 +5,16 @@ import subprocess
 import sys
 
 import pandas as pd
+import yaml
+
+import pipeline_config
 
 from argparse import ArgumentParser
 from typing import List, Optional
+
+# import parameters
+default_config_file = pipeline_config.default_config_file
+workflow_config = pipeline_config.WORKFLOW_DEFAULT_CONF
 
 logger = logging.getLogger("MAGICIAN")
 logger.setLevel(logging.DEBUG)  # in case we need this later
@@ -38,11 +45,12 @@ def make_demo_tempfile(tempfile: pathlib.Path) -> None:
     logger.info("Creating temporary input file %s", tempfile)
     demo_files_to_abs.to_csv(tempfile, sep="\t", index=False)
 
-def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT_PROFILE, profile_base: Optional[str] = "",
-                  readlength: Optional[str] = "", insert_size: Optional[int] = DEFAULT_INSERT,
-                  cluster_cmd: Optional[str] = "",
+
+def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT_PROFILE,
+                  profile_base: Optional[str] = "", readlength: Optional[str] = "",
+                  insert_size: Optional[int] = DEFAULT_INSERT, cluster_cmd: Optional[str] = "",
                   cores: Optional[int]=DEFAULT_CORES,
-                  *snake_params) -> List[str]:
+                  *snake_params, config_path: pathlib.Path = default_config_file) -> List[str]:
     """Get the Snakemake command with optional configuration parameters.
     Arguments:
         input_file:     File with paths to source genomes, sequence type (plasmid/chromosome) and desired relative
@@ -55,6 +63,8 @@ def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT
         cluster_cmd:    command to use for cluster mode
         cores:          the amount of cores Snakemake should use
         snake_params:   parameters to pass to the Snakefile
+        config_path:    path to the config file to use with Snakemake
+
 
     """
     # check all elements of the command
@@ -91,12 +101,18 @@ def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT
     # get path for snakefile
     snake_path = pathlib.Path(__file__).resolve().parent / "snakefiles" / "Snakefile"
 
+    # load config
+    with open(config_path, "r", encoding = "utf-8") as config_file:
+        snake_config = yaml.safe_load(config_file)
+
     # get basic command
     snakemake_cmd = ["snakemake", target, "-s", snake_path,
                      "--config", 'profile_type="{}"'.format(profile_type),
                      'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength),
                      'insert_size={}'.format(insert_size),
                      'samples_file={}'.format(input_file),
+                     '--use-conda', '--conda-frontend', snake_config["conda_frontend"],
+                     "--configfile", str(config_path),
                      "--cores", str(cores),
                      *snake_params]
 
@@ -136,18 +152,23 @@ if __name__ == "__main__":
                         would with snakemake.""")
     parser.add_argument("--cores", action="store", default=DEFAULT_CORES,
                         help=f"Amount of cores Snakemake should use (default: {DEFAULT_CORES})")
-    parser.add_argument("--snake_flags", nargs='*', help="Flags to be passed to snakemake, enclosed in quotes")
-    # if no arguments are given, show usage and offer demo
+    parser.add_argument("--config_file", help = "Config file for run")
+    parser.add_argument("--snake_flags", nargs='*',
+                        help="Flags to be passed to snakemake, enclosed in quotes")
+    # if no arguments are given, show usage and offer demo;
+    # in this case we're running with the default config
     if len(sys.argv) == 1:
         parser.print_usage()  # TODO: usage or full-on help?
-        run_demo = input(f"Start local example run with sample genomes and output to {pathlib.Path.cwd()}? [y/n] ")
+        run_demo = input("Start local example run with sample genomes "
+                         f"and output to {pathlib.Path.cwd()}? [y/n] \n"
+                         f"Remember to edit {default_config_file}"
+                         " to specify your CAMISIM installation.")
         if run_demo == "y":
             # make a copy of the input file with absolute paths so it can run anywhere
             local_tempfile = pathlib.Path.cwd() / "tmp_demo_sample_distributions.tsv"
             make_demo_tempfile(local_tempfile)
-            snake_command = get_snake_cmd(local_tempfile, "all_bin_summaries",
-                                          DEFAULT_PROFILE, "", "", DEFAULT_INSERT, "",
-                                          DEFAULT_CORES, "--use-conda")
+            snake_command = get_snake_cmd(local_tempfile, "all_bin_summaries", DEFAULT_PROFILE, "",
+                                          "", DEFAULT_INSERT, "", DEFAULT_CORES)
             snake_run = subprocess.run(snake_command, check=True)
             sys.exit(snake_run.returncode)
         if run_demo == "n":
@@ -167,8 +188,11 @@ if __name__ == "__main__":
     cluster_cmd = args.cluster
     snake_cores = args.cores
     snake_flags = args.snake_flags[0].split()
+    if args.workflow_config_file:
+        default_config_file = pathlib.Path(args.workflow_config_file).resolve()
 
-    snake_command = get_snake_cmd(community_file, target_result, profiletype, profilename, read_length, insert_size,
+    snake_command = get_snake_cmd(community_file, target_result, profiletype, profilename,
+                                  read_length, insert_size,
                                   cluster_cmd, snake_cores, *snake_flags)
     subprocess.run(snake_command, check=True)
 

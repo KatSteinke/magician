@@ -47,18 +47,45 @@ class TestRunMagician(unittest.TestCase):
     cluster_cmd = ""
     cores = 6
     distributions_file = pathlib.Path(__file__).parent / "data" / "test_distribution_file.tsv"
+
     def test_default_command_success(self):
         """Run Snakemake with default settings."""
         expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
                             "--config", 'profile_type="mbarc"',
                             'profile_name="False"', 'readlength="False"',
-                            'insert_size=270', f"samples_file={self.distributions_file}", "--cores", "6", "-n"]
+                            'insert_size=270', f"samples_file={self.distributions_file}",
+                            "--use-conda",
+                            "--conda-frontend", "conda",
+                            "--configfile", str(run_magician.default_config_file),
+                            "--cores", "6", "-n"]
         snake_flags = ["-n"]
-        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
+                                                  self.profile_type,
                                                   self.profile_base, self.readlength, self.insert_size,
                                                   self.cluster_cmd, self.cores, *snake_flags)
         assert test_command == expected_command
 
+    def test_use_config_success(self):
+        """Run Snakemake and pass a config file."""
+        config_file = pathlib.Path(__file__).parent / "data" / "test_wrapper" / "test_config.yml"
+
+        expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
+                            "--config", 'profile_type="mbarc"',
+                            'profile_name="False"', 'readlength="False"',
+                            'insert_size=270', f"samples_file={self.distributions_file}",
+                            "--use-conda",
+                            "--conda-frontend", "mamba",
+                            "--configfile", str(config_file),
+                            "--cores", "6",
+                            "-n"]
+        snake_flags = ["-n"]
+        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
+                                                  self.profile_type, self.profile_base,
+                                                  self.readlength, self.insert_size,
+                                                  self.cluster_cmd, self.cores,
+                                                  *snake_flags,
+                                                  config_path = config_file)
+        assert test_command == expected_command
 
     def test_run_cluster_command(self):
         """Run Snakemake in cluster mode"""
@@ -66,11 +93,16 @@ class TestRunMagician(unittest.TestCase):
                             "--cluster", "qsub -pe threaded {threads}",
                             "--config", 'profile_type="mbarc"',
                             'profile_name="False"', 'readlength="False"',
-                            'insert_size=270', f"samples_file={self.distributions_file}", "--cores", "6", "-n"]
+                            'insert_size=270', f"samples_file={self.distributions_file}",
+                            "--use-conda",
+                            "--conda-frontend", "conda",
+                            "--configfile", str(run_magician.default_config_file), "--cores", "6",
+                            "-n"]
         snake_flags = ["-n"]
         cluster_cmd = "qsub -pe threaded {threads}"
-        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
-                                                  self.profile_base, self.readlength, self.insert_size, cluster_cmd,
+        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
+                                                  self.profile_type, self.profile_base,
+                                                  self.readlength, self.insert_size, cluster_cmd,
                                                   self.cores,
                                                   *snake_flags)
         assert test_command == expected_command
@@ -80,22 +112,27 @@ class TestRunMagician(unittest.TestCase):
         expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
                             "--config", 'profile_type="mbarc"',
                             'profile_name="False"', 'readlength="False"',
-                            'insert_size=500',  f"samples_file={self.distributions_file}", "--cores", "6", "-n"]
+                            'insert_size=500',  f"samples_file={self.distributions_file}",
+                            "--use-conda",
+                            "--conda-frontend", "conda",
+                            "--configfile", str(run_magician.default_config_file),
+                            "--cores", "6", "-n"]
         snake_flags = ["-n"]
         insert_size = 500
-        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
-                                                  self.profile_base, self.readlength, insert_size, self.cluster_cmd,
+        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
+                                                  self.profile_type, self.profile_base,
+                                                  self.readlength, insert_size, self.cluster_cmd,
                                                   self.cores,
                                                   *snake_flags)
         assert test_command == expected_command
-
 
     def test_bad_insertsize(self):
         """Catch bad insert size."""
         snake_flags = ["-n"]
         insert_size = 0
         with self.assertRaisesRegex(ValueError, r"Insert size needs to be above 0."):
-            run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries", self.profile_type,
+            run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
+                                       self.profile_type,
                                        self.profile_base, self.readlength, insert_size, self.cluster_cmd, *snake_flags)
 
     def test_bad_file_name(self):
