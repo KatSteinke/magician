@@ -1,7 +1,7 @@
 # MAGICIAN
 MAGICIAN is a tool for easily generating simulated metagenome-assembled genomes from a user-determined "community".
 ## Requirements
-MAGICIAN is a Snakemake pipeline that uses conda to manage dependencies.
+MAGICIAN is a Snakemake pipeline that uses conda or mamba to manage dependencies.
 Thus, it primarily requires Snakemake and conda/mamba to be used.
 
 It is also necessary to install [a fork of CAMISIM 1.2](https://github.com/KatSteinke/CAMISIM)
@@ -15,10 +15,11 @@ In order to get started with MAGICIAN, simply clone the repository:
 git clone https://github.com/KatSteinke/magician
 ```
 
-You will also have to adapt the Snakefile. 
-### Using conda (bringing your own CAMISIM)
-When using your own copy of CAMISIM, set `CAMISIM_DIR` to the directory in which you installed CAMISIM.
-
+You will also have to adapt the config file given under [config/default_config.yml](config/default_config.yml). 
+### CAMISIM database settings
+Change the path given under `camisim_path` in `default_config.yml`to the path to your forked copy of CAMISIM.
+### Package management system (conda/mamba)
+If you use mamba (recommended due to speed), change the setting for `conda_frontend` to `mamba`. 
 ## Running MAGICIAN
 ### Preparing the input 
 MAGICIAN requires the following files to run:
@@ -42,6 +43,7 @@ run_magician.py [-h] [--target TARGET]
                        [--profile_name PROFILE_NAME]
                        [--profile_readlength PROFILE_READLENGTH]
                        [--insert_size INSERT_SIZE] [--cluster CLUSTER]
+                       [--config_file CONFIG_FILE]
                        community_file
                        --snake_flags "--cores [N_CORES] [SNAKE_FLAGS...]"
 
@@ -50,9 +52,7 @@ run_magician.py [-h] [--target TARGET]
 
 * `community_file`: the tab-separated file with sample distributions for the community/communities you wish to simulate. 
 * `--snake_flags`: the flags to be passed on to Snakemake, enclosed in double quotes. As a minimum, this means `"-n "` 
-for a dry run or `"--cores [N_CORES]"` (with `[N_CORES]` being the amount of cores Snakemake should use) for an actual run. \
-To use conda or mamba, specify `--use-conda`
-  (and `--conda-frontend conda` if required). For all else, refer to Snakemake's documentation.
+for a dry run or `"--cores [N_CORES]"` (with `[N_CORES]` being the amount of cores Snakemake should use) for an actual run.
 #### Optional arguments
 * `--target`: the desired output file or rule. By default, MAGICIAN runs the entire workflow for all communities in the
 input file given. To run the workflow for a single
@@ -67,6 +67,9 @@ error profiles (e.g. `path/to/custom/profile_R` if  forward and reverse reads ar
 error profile.
 * `--insert_size`: mean insert size for read simulation (defaults to 270 bp)
 * `--cluster`: when using Snakemake's cluster mode, supply the command for submitting jobs as you would with Snakemake
+* `--config_file`: the path to the configuration file to use, if not using the default file 
+`default_config.yml`
+
 #### Starting a test run
 To start a test run with the sample genomes found in test/data/test_genomes, run `python3 run_magician.py` without any arguments. The script will show usage and ask whether to start a test run:
 ```
@@ -74,12 +77,14 @@ usage: run_magician.py [-h] [--target TARGET] [--profile_type {mbarc,hi,mi,hi150
                        [--profile_name PROFILE_NAME]
                        [--profile_readlength PROFILE_READLENGTH]
                        [--insert_size INSERT_SIZE] [--cluster CLUSTER]
+                       [--config_file CONFIG_FILE]
                        [--snake_flags [SNAKE_FLAGS ...]]
                        community_file
 Start local example run with sample genomes and output to /home/kma/magician? [y/n]
+Remember to edit config/default_config.yml to specify your CAMISIM installation.
 ```
 Confirm with `y` to start the test run. \
-Example summary files for such a run can be found under test/data/sample_summaries; the full output is available at Zenodo under TODO ZENODO LINK.
+Example summary files for such a run can be found under [test/data/sample_summaries](test/data/sample_summaries); the full output is available at Zenodo under TODO ZENODO LINK.
 # License
 Copyright 2023 Kat Steinke
 
