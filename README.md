@@ -99,7 +99,7 @@ Start local example run with sample genomes and output to /home/kma/magician? [y
 Remember to edit config/default_config.yml to specify your CAMISIM installation.
 ```
 Confirm with `y` to start the test run. \
-Example summary files for such a run can be found under [test/data/sample_summaries](test/data/sample_summaries); the full output is available at Zenodo under TODO ZENODO LINK.
+Example summary files for such a run can be found under [test/data/sample_summaries](test/data/sample_summaries); the full output is available at [Zenodo](https://doi.org/10.5281/zenodo.10081882).
 # License
 Copyright 2023 Kat Steinke
 
