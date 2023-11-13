@@ -1,6 +1,10 @@
 # MAGICIAN
 MAGICIAN is a tool for easily generating simulated metagenome-assembled genomes from a user-determined "community".
-## Requirements
+# Workflow overview
+
+## Detailed overview
+![figs/workflow_details.png](figs/workflow_details.png)
+# Requirements
 MAGICIAN is a Snakemake pipeline that uses conda or mamba to manage dependencies.
 Thus, it primarily requires Snakemake and conda or mamba to be used (mamba is recommended). \
 Requirements for the base environment are given in `requirements.yml` and can be installed as follows:
@@ -20,19 +24,19 @@ in order to use custom error profiles. This can be done by running
 ```commandline
 git clone https://github.com/KatSteinke/CAMISIM
 ```
-## Getting started
+# Getting started
 In order to get started with MAGICIAN, simply clone the repository:
 ```commandline
 git clone https://github.com/KatSteinke/magician
 ```
 
 You will also have to adapt the config file given under [config/default_config.yml](config/default_config.yml). 
-### CAMISIM database settings
+## CAMISIM database settings
 Change the path given under `camisim_path` in `default_config.yml`to the path to your forked copy of CAMISIM.
-### Package management system (conda/mamba)
+## Package management system (conda/mamba)
 If you use mamba (recommended due to speed), change the setting for `conda_frontend` to `mamba`. 
-## Running MAGICIAN
-### Preparing the input 
+# Running MAGICIAN
+## Preparing the input 
 MAGICIAN requires the following files to run:
 * genome sequences of the organisms the simulated community should consist of, in genbank or fasta format
 * a tab-separated file of sample distributions.
@@ -46,7 +50,7 @@ sequences in these communities:
 | /path/to/genome2 | chromosome | 1          | 0          |     |
 | /path/to/plasmid | plasmid    | 1          | 1          |     |
   ```
-### Starting MAGICIAN
+## Starting MAGICIAN
 MAGICIAN is started using `run_magician.py`:
 ```
 run_magician.py [-h] [--target TARGET]
@@ -60,12 +64,12 @@ run_magician.py [-h] [--target TARGET]
                        [--snake_flags "SNAKE_FLAGS..."]
 
 ```
-#### Required arguments
+### Required arguments
 
 * `community_file`: the tab-separated file with sample distributions for the community/communities you wish to simulate. 
 * `--snake_flags`: the flags to be passed on to Snakemake, enclosed in double quotes. For a dry run, use `"-n "`.
  For all else, refer to Snakemake's documentation.
-#### Optional arguments
+### Optional arguments
 * `--target`: the desired output file or rule. By default, MAGICIAN runs the entire workflow for all communities in the
 input file given. To run the workflow for a single
 community, give `summaries/bin_summary_[COMMUNITY].xlsx` here, replacing `[COMMUNITY]` with the name of the community
@@ -84,7 +88,7 @@ error profile.
 * `--config_file`: the path to the configuration file to use, if not using the default file 
 `default_config.yml`
 
-#### Starting a test run
+### Starting a test run
 To start a test run with the sample genomes found in test/data/test_genomes, run `python3 run_magician.py` without any arguments. The script will show usage and ask whether to start a test run:
 ```
 usage: run_magician.py [-h] [--target TARGET] [--profile_type {mbarc,hi,mi,hi150,own}]
