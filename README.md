@@ -1,8 +1,9 @@
 # MAGICIAN
 MAGICIAN is a tool for easily generating simulated metagenome-assembled genomes from a user-determined "community".
 # Workflow overview
-
-## Detailed overview
+## Top-level overview
+![figs/workflow_overview.png](figs/workflow_overview.png)
+## Detailed overview with tools
 ![figs/workflow_details.png](figs/workflow_details.png)
 # Requirements
 MAGICIAN is a Snakemake pipeline that uses conda or mamba to manage dependencies.
