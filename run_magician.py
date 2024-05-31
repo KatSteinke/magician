@@ -188,8 +188,8 @@ if __name__ == "__main__":
     cluster_cmd = args.cluster
     snake_cores = args.cores
     snake_flags = args.snake_flags[0].split()
-    if args.workflow_config_file:
-        default_config_file = pathlib.Path(args.workflow_config_file).resolve()
+    if args.config_file:
+        default_config_file = pathlib.Path(args.config_file).resolve()
 
     snake_command = get_snake_cmd(community_file, target_result, profiletype, profilename,
                                   read_length, insert_size,
