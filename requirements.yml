@@ -7,5 +7,6 @@ dependencies:
   - biopython
   - openpyxl
   - pandas
+  - python=3.10
   - pyyaml
   - snakemake
