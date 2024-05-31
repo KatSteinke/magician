@@ -47,7 +47,7 @@ def make_demo_tempfile(tempfile: pathlib.Path) -> None:
 
 
 def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT_PROFILE,
-                  profile_base: Optional[str] = "", readlength: Optional[str] = "",
+                  profile_base: Optional[str] = "", readlength: Optional[int] = None,
                   insert_size: Optional[int] = DEFAULT_INSERT, cluster_cmd: Optional[str] = "",
                   cores: Optional[int]=DEFAULT_CORES,
                   *snake_params, config_path: pathlib.Path = default_config_file) -> List[str]:
@@ -65,6 +65,12 @@ def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT
         snake_params:   parameters to pass to the Snakefile
         config_path:    path to the config file to use with Snakemake
 
+    Returns:
+        The command for running Snakemake with the desired parameters.
+
+    Raises:
+        ValueError: if arguments contain invalid characters, or if a value that isn't a positive int
+                    was given for read length, insert size or amount of cores
 
     """
     # check all elements of the command
@@ -86,11 +92,18 @@ def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT
     if cores <= 0:
         raise ValueError(core_error)
 
-    if profile_type == "own" and not (profile_base and readlength):
-        raise ValueError("Both name of the custom error profile and read length of the error profile must be given when using own profiles.")
+    # we only need to check read length when it's relevant - check explicitly for "not None"
+    # so we can complain about read lengths <= 0 specifically
+    if profile_type == "own":
+        if not (profile_base and (readlength is not None)):
+            raise ValueError("Both name of the custom error profile and read length of the error"
+                             " profile must be given when using own profiles.")
+        if readlength <= 0:
+            raise ValueError("Read length needs to be above 0.")
 
     if (profile_base or readlength) and profile_type != "own":
-        raise ValueError("Name of the error profile and read length can only be specified when using own profiles.")
+        raise ValueError("Name of the error profile and read length can only be specified"
+                         " when using own profiles.")
 
     # if custom parameters haven't been given, set to False for later processing in Snakefile
     if not profile_base:
@@ -106,20 +119,20 @@ def get_snake_cmd(input_file, target: str, profile_type: Optional[str] = DEFAULT
         snake_config = yaml.safe_load(config_file)
 
     # get basic command
-    snakemake_cmd = ["snakemake", target, "-s", snake_path,
-                     "--config", 'profile_type="{}"'.format(profile_type),
-                     'profile_name="{}"'.format(profile_base), 'readlength="{}"'.format(readlength),
+    snakemake_cmd = ["snakemake", target, "-s", snake_path]
+    # add cluster commands if needed
+    if cluster_cmd:
+        snakemake_cmd += ["--cluster", cluster_cmd]
+    snakemake_cmd += ["--config", 'profile_type="{}"'.format(profile_type),
                      'insert_size={}'.format(insert_size),
-                     'samples_file={}'.format(input_file),
-                     '--use-conda', '--conda-frontend', snake_config["conda_frontend"],
+                     'samples_file={}'.format(input_file)]
+    if profile_type == "own":
+        snakemake_cmd += ['profile_name="{}"'.format(profile_base),
+                          'readlength={}'.format(readlength)]
+    snakemake_cmd += ['--use-conda', '--conda-frontend', snake_config["conda_frontend"],
                      "--configfile", str(config_path),
                      "--cores", str(cores),
                      *snake_params]
-
-    # if cluster mode is specified:
-    if cluster_cmd:
-        snakemake_cmd.insert(4, "--cluster")
-        snakemake_cmd.insert(5, cluster_cmd)
 
     return snakemake_cmd
     
@@ -144,7 +157,8 @@ if __name__ == "__main__":
                         help="""Base name of custom error profile, if given (name of files without '[1/2].txt');\
                          required with 'own' error profile""", default="")
     parser.add_argument("--profile_readlength", action="store",
-                        help="Read length of custom error profile; required with 'own' error profile", default="")
+                        help="Read length of custom error profile; "
+                             "required with 'own' error profile", default=None)
     parser.add_argument("--insert_size", action="store", type=int, default=DEFAULT_INSERT,
                         help=f"Mean insert size for read simulation (default: {DEFAULT_INSERT})")
     parser.add_argument("--cluster", action="store", default="",
@@ -167,8 +181,9 @@ if __name__ == "__main__":
             # make a copy of the input file with absolute paths so it can run anywhere
             local_tempfile = pathlib.Path.cwd() / "tmp_demo_sample_distributions.tsv"
             make_demo_tempfile(local_tempfile)
-            snake_command = get_snake_cmd(local_tempfile, "all_bin_summaries", DEFAULT_PROFILE, "",
-                                          "", DEFAULT_INSERT, "", DEFAULT_CORES)
+            snake_command = get_snake_cmd(local_tempfile, "all_bin_summaries", DEFAULT_PROFILE,
+                                          insert_size = DEFAULT_INSERT, cluster_cmd = "",
+                                          cores = DEFAULT_CORES)
             snake_run = subprocess.run(snake_command, check=True)
             sys.exit(snake_run.returncode)
         if run_demo == "n":
