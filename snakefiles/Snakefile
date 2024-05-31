@@ -18,15 +18,10 @@ CAMISIM_DIR = config["camisim_path"]
 MAGICIAN_DIR = pathlib.Path(workflow.basedir).parent
 
 # if config entries do not exist, set defaults
-if not "profile_type" in config:
-    config["profile_type"] = "mbarc"
-if not "profile_name" in config:
-    config["profile_name"] = "False"
-if not "readlength" in config:
-    config["readlength"] = "False"
-if not "insert_size" in config:
-    config["insert_size"] = 270
-
+PROFILE_TYPE = config.get("profile_type", "mbarc")
+PROFILE_NAME = config.get("profile_name", False)
+READLENGTH = config.get("readlength", False)
+INSERT_SIZE = config.get("insert_size", 270)
 
 rule complete_qc:
     input:
@@ -121,12 +116,14 @@ rule camisim_configfiles:
         camisim_dir = CAMISIM_DIR,
         #coverage = 20,
         samplesize = 2.5,
-        profile_type = config["profile_type"],
-        profile_base = "" if config["profile_name"] == "False" else "--profile_basename '{}'".format(pathlib.Path(config["profile_name"]).stem),
-        profile_readlength = "" if config["readlength"] == "False" else "--profile_readlength {}".format(config["readlength"]),
-        insert_size = config["insert_size"],
-        errorprofile_dir = str(pathlib.Path(CAMISIM_DIR) / "tools" / "art_illumina-2.3.6" / "profiles") if config["profile_name"] == "False" \
-            else pathlib.Path(config["profile_name"]).parent
+        profile_type = PROFILE_TYPE,
+        profile_base = "" if not PROFILE_NAME \
+            else "--profile_basename '{}'".format(pathlib.Path(PROFILE_NAME).stem),
+        profile_readlength = "" if not READLENGTH \
+            else "--profile_readlength {}".format(READLENGTH),
+        insert_size = INSERT_SIZE,
+        errorprofile_dir = str(pathlib.Path(CAMISIM_DIR) / "tools" / "art_illumina-2.3.6" / "profiles") if not PROFILE_NAME \
+            else pathlib.Path(PROFILE_NAME).parent
     output:
         camisim_configfile = 'camisim_config_{sample}.ini'
     #conda: pathlib.Path(workflow.current_basedir).parent / "requirements.yml"

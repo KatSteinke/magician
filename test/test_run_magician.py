@@ -42,7 +42,7 @@ class TestRunMagician(unittest.TestCase):
     snake_path = pathlib.Path(__file__).resolve().parent.parent / "snakefiles" / "Snakefile"
     profile_type = "mbarc"
     profile_base = ""
-    readlength = ""
+    readlength = None
     insert_size = 270
     cluster_cmd = ""
     cores = 6
@@ -52,7 +52,6 @@ class TestRunMagician(unittest.TestCase):
         """Run Snakemake with default settings."""
         expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
                             "--config", 'profile_type="mbarc"',
-                            'profile_name="False"', 'readlength="False"',
                             'insert_size=270', f"samples_file={self.distributions_file}",
                             "--use-conda",
                             "--conda-frontend", "conda",
@@ -71,7 +70,6 @@ class TestRunMagician(unittest.TestCase):
 
         expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
                             "--config", 'profile_type="mbarc"',
-                            'profile_name="False"', 'readlength="False"',
                             'insert_size=270', f"samples_file={self.distributions_file}",
                             "--use-conda",
                             "--conda-frontend", "mamba",
@@ -92,7 +90,6 @@ class TestRunMagician(unittest.TestCase):
         expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
                             "--cluster", "qsub -pe threaded {threads}",
                             "--config", 'profile_type="mbarc"',
-                            'profile_name="False"', 'readlength="False"',
                             'insert_size=270', f"samples_file={self.distributions_file}",
                             "--use-conda",
                             "--conda-frontend", "conda",
@@ -111,7 +108,6 @@ class TestRunMagician(unittest.TestCase):
         """Use non-default settings for various parameters."""
         expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
                             "--config", 'profile_type="mbarc"',
-                            'profile_name="False"', 'readlength="False"',
                             'insert_size=500',  f"samples_file={self.distributions_file}",
                             "--use-conda",
                             "--conda-frontend", "conda",
@@ -125,6 +121,40 @@ class TestRunMagician(unittest.TestCase):
                                                   self.cores,
                                                   *snake_flags)
         assert test_command == expected_command
+
+    def test_set_own_profile(self):
+        """Successfully set a custom error profile."""
+        expected_command = ["snakemake", "all_bin_summaries", "-s", self.snake_path,
+                            "--config", 'profile_type="own"',
+                            'insert_size=270', f"samples_file={self.distributions_file}",
+                            'profile_name="test_R"', "readlength=150",
+                            "--use-conda",
+                            "--conda-frontend", "conda",
+                            "--configfile", str(run_magician.default_config_file),
+                            "--cores", "6", "-n"]
+        snake_flags = ["-n"]
+        profile_name = "own"
+        profile_base = "test_R"
+        readlength = 150
+        test_command = run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
+                                                  profile_name,
+                                                  profile_base, readlength, self.insert_size,
+                                                  self.cluster_cmd, self.cores, *snake_flags)
+        assert test_command == expected_command
+
+    def test_bad_readlength(self):
+        """Catch bad read length."""
+        snake_flags = ["-n"]
+        profile_name = "own"
+        profile_base = "test_R"
+        readlength = 0
+        error_msg = r"Read length needs to be above 0."
+        with self.assertRaisesRegex(ValueError, error_msg):
+            run_magician.get_snake_cmd(self.distributions_file, "all_bin_summaries",
+                                       profile_name,
+                                       profile_base, readlength, self.insert_size,
+                                       self.cluster_cmd, self.cores, *snake_flags)
+
 
     def test_bad_insertsize(self):
         """Catch bad insert size."""
