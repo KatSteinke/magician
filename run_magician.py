@@ -187,7 +187,9 @@ if __name__ == "__main__":
     insert_size = args.insert_size
     cluster_cmd = args.cluster
     snake_cores = args.cores
-    snake_flags = args.snake_flags[0].split()
+    snake_flags = []
+    if args.snake_flags:
+        snake_flags = args.snake_flags[0].split()
     if args.config_file:
         default_config_file = pathlib.Path(args.config_file).resolve()
 
